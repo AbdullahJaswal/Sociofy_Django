@@ -1,0 +1,62 @@
+version: "3.9"
+services:
+    postgresql:
+        image: postgres:latest
+        container_name: PostgreSQL
+        environment:
+            - POSTGRES_USER=sociofy
+            - POSTGRES_PASSWORD=999sociofy123
+            - POSTGRES_DB=sociofy
+        volumes:
+            - .dbdata:/var/lib/postgresql/
+        restart: always
+        ports:
+            - 5432:5432
+    rabbitmq:
+        image: rabbitmq:3.8.14-management
+        container_name: RabbitMQ
+        restart: always
+        ports:
+            - 5672:5672
+            - 15672:15672
+        volumes:
+            - .rabbitmqdata:/var/lib/rabbitmq/
+            - .rabbitmqlog:/var/log/rabbitmq/
+        environment:
+            - RABBITMQ_DEFAULT_USER=sociofy
+            - RABBITMQ_DEFAULT_PASS=sociofy123
+    celery:
+        build: .
+        container_name: Celery
+        restart: always
+        command: bash -c "pip install -r requirements.txt && celery --app=core worker --pool=gevent --concurrency=64 --loglevel=INFO -E"
+        volumes:
+            - .:/usr/src/sociofy/backend/
+        links:
+            - rabbitmq
+        depends_on:
+            - rabbitmq
+            - django
+    django:
+        build: .
+        container_name: Django
+        command: bash -c "pip install -r requirements.txt && python manage.py runserver 0.0.0.0:8000"
+        volumes:
+            - .:/usr/src/sociofy/backend/
+        restart: always
+        ports:
+            - 8000:8000
+        depends_on:
+            - postgresql
+            - rabbitmq
+    background_tasks:
+        build: .
+        container_name: Background_Tasks
+        command: bash -c "pip install -r requirements.txt && python manage.py process_tasks"
+        volumes:
+            - .:/usr/src/sociofy/backend/
+        restart: always
+        links:
+            - django
+        depends_on:
+            - django

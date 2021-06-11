@@ -1,0 +1,8 @@
+*.idea/
+*.dist/
+*.vscode/
+__pycache__/
+migrations/
+*.dbdata/
+*.rabbitmqlog/
+*.rabbitmqdata/
