@@ -1,12 +1,9 @@
 from rest_framework import generics
 from .serializers import *
 
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.response import Response
 from rest_framework import status
-
-from core.pagination import CustomPagination
 
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -15,7 +12,7 @@ from .tasks import *
 
 from users.models import User
 
-permission = IsAuthenticated  # Change this to IsAuthenticated
+from configs import permission
 
 
 # user = 1  # Replace 'user' to self.request.user.id with FIND and REPLACE and remove this variable.
@@ -32,11 +29,6 @@ class FBPageList(generics.ListAPIView):
 
     @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
     def get(self, request, *args, **kwargs):
-        FacebookAccounts.objects.filter(id=1).update(
-            access_token="EAAFZAzWeB7YsBAKrEmLdZAjBrotzZA5JZAxF23R6bQQ55ZByh0obnabCLKeKsJGeJ4r8dLnFeirICSwRZCZCfuMmT4BEiNk5wrKnenJJwZCUOsaTz46jYIabsBmb3rXR33SttPRRGvD4aalfMXZAGdbyEZCjQFxtwfBcD7eZA9PXis91ih6WuiXjFk0tfZCvWv02QmEZD")
-        InstagramAccounts.objects.filter(id=1).update(
-            access_token="EAAFZAzWeB7YsBAKrEmLdZAjBrotzZA5JZAxF23R6bQQ55ZByh0obnabCLKeKsJGeJ4r8dLnFeirICSwRZCZCfuMmT4BEiNk5wrKnenJJwZCUOsaTz46jYIabsBmb3rXR33SttPRRGvD4aalfMXZAGdbyEZCjQFxtwfBcD7eZA9PXis91ih6WuiXjFk0tfZCvWv02QmEZD")
-
         try:
             userObj = User.objects.get(id=self.request.user.id)
         except:
