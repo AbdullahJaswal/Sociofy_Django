@@ -63,7 +63,7 @@ class IGPageDemographyAnalyticList(generics.ListAPIView):
 
 
 class IGPageDailyImpressionsList(generics.ListAPIView):
-    permission_classes = [AllowAny]
+    permission_classes = [permission]
     throttle_classes = [UserRateThrottle]
     serializer_class = IGPageDailyImpressionsSerializer
 
@@ -86,7 +86,7 @@ class IGPageDailyImpressionsList(generics.ListAPIView):
 
 
 class IGPageDailyReachList(generics.ListAPIView):
-    permission_classes = [AllowAny]
+    permission_classes = [permission]
     throttle_classes = [UserRateThrottle]
     serializer_class = IGPageDailyReachSerializer
 
@@ -109,7 +109,7 @@ class IGPageDailyReachList(generics.ListAPIView):
 
 
 class IGPageDailyFollowerCountList(generics.ListAPIView):
-    permission_classes = [AllowAny]
+    permission_classes = [permission]
     throttle_classes = [UserRateThrottle]
     serializer_class = IGPageDailyFollowerCountSerializer
 
@@ -132,7 +132,7 @@ class IGPageDailyFollowerCountList(generics.ListAPIView):
 
 
 class IGPageDailyEmailContactsList(generics.ListAPIView):
-    permission_classes = [AllowAny]
+    permission_classes = [permission]
     throttle_classes = [UserRateThrottle]
     serializer_class = IGPageDailyEmailContactsSerializer
 
@@ -155,7 +155,7 @@ class IGPageDailyEmailContactsList(generics.ListAPIView):
 
 
 class IGPageDailyPhoneCallClicksList(generics.ListAPIView):
-    permission_classes = [AllowAny]
+    permission_classes = [permission]
     throttle_classes = [UserRateThrottle]
     serializer_class = IGPageDailyPhoneCallClicksSerializer
 
@@ -178,7 +178,7 @@ class IGPageDailyPhoneCallClicksList(generics.ListAPIView):
 
 
 class IGPageDailyTextMessageClicksList(generics.ListAPIView):
-    permission_classes = [AllowAny]
+    permission_classes = [permission]
     throttle_classes = [UserRateThrottle]
     serializer_class = IGPageDailyTextMessageClicksSerializer
 
@@ -201,7 +201,7 @@ class IGPageDailyTextMessageClicksList(generics.ListAPIView):
 
 
 class IGPageDailyDirectionsClicksList(generics.ListAPIView):
-    permission_classes = [AllowAny]
+    permission_classes = [permission]
     throttle_classes = [UserRateThrottle]
     serializer_class = IGPageDailyDirectionsClicksSerializer
 
@@ -224,7 +224,7 @@ class IGPageDailyDirectionsClicksList(generics.ListAPIView):
 
 
 class IGPageDailyWebsiteClicksList(generics.ListAPIView):
-    permission_classes = [AllowAny]
+    permission_classes = [permission]
     throttle_classes = [UserRateThrottle]
     serializer_class = IGPageDailyWebsiteClicksSerializer
 
@@ -247,7 +247,7 @@ class IGPageDailyWebsiteClicksList(generics.ListAPIView):
 
 
 class IGPageDailyProfileViewsList(generics.ListAPIView):
-    permission_classes = [AllowAny]
+    permission_classes = [permission]
     throttle_classes = [UserRateThrottle]
     serializer_class = IGPageDailyProfileViewsSerializer
 
@@ -294,7 +294,7 @@ class IGPostAnalyticList(generics.ListAPIView):
 
 
 class IGPostRatingList(generics.ListAPIView):
-    permission_classes = [AllowAny]
+    permission_classes = [permission]
     throttle_classes = [UserRateThrottle]
     serializer_class = IGPostRatingsSerializer
 
