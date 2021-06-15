@@ -6,3 +6,4 @@ migrations
 .dbdata
 .rabbitmqlog
 .rabbitmqdata
+testing.py

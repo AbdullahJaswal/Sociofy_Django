@@ -32,7 +32,8 @@ def fetch_fb_pages_data(user):
             tasks = []
             for account in fb_accounts:
                 tasks.append(
-                    getFBPageData.s(account.facebook_id, fb_app.app_id, fb_app.app_secret, account.access_token))
+                    getFBPageData.s(account.facebook_id, fb_app.app_id, fb_app.app_secret, account.access_token)
+                )
 
             task_group = group(*tasks)
             result_group = task_group.apply_async()

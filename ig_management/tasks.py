@@ -351,7 +351,7 @@ def fetch_ig_post_comments_data(local_page_id, local_post_id, user_id):
                         is_hidden=comment.get('hidden'),
                         text=comment.get('text') or None,
                         like_count=comment.get('like_count') or 0,
-                        replies_count=None,
+                        replies_count=0,
                         replies=None,
                         comment_post_id=media_user_id,
                     ))

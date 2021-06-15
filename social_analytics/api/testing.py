@@ -1,3 +1,4 @@
+from facebook_business.adobjects.igmedia import IGMedia
 from facebook_business.adobjects.iguser import IGUser
 from facebook_business.adobjects.instagraminsightsresult import InstagramInsightsResult
 from facebook_business.api import FacebookAdsApi
@@ -14,18 +15,6 @@ def testing(fb_obj_id, app_id, app_secret, access_token):
         crash_log=False
     )
 
-    params = {
-        "metric": [
-            "audience_gender_age",
-            "audience_locale",
-            "audience_country",
-            "audience_city"
-        ],
-        "period": [
-            InstagramInsightsResult.Period.lifetime
-        ]
-    }
-
     fields = {
         InstagramInsightsResult.Field.id,
         InstagramInsightsResult.Field.title,
@@ -33,12 +22,55 @@ def testing(fb_obj_id, app_id, app_secret, access_token):
         InstagramInsightsResult.Field.values
     }
 
-    return IGUser(fb_obj_id).get_insights(params=params, fields=fields)
+    try:
+        params = {
+            "metric": [
+                InstagramInsightsResult.Metric.impressions,
+                InstagramInsightsResult.Metric.reach,
+                InstagramInsightsResult.Metric.engagement,
+                InstagramInsightsResult.Metric.saved,
+                InstagramInsightsResult.Metric.video_views
+            ],
+            "period": [
+                InstagramInsightsResult.Period.lifetime
+            ]
+        }
+
+        data = IGMedia(fb_obj_id).get_insights(params=params, fields=fields)
+    except:
+        params = {
+            "metric": [
+                InstagramInsightsResult.Metric.impressions,
+                InstagramInsightsResult.Metric.reach,
+                InstagramInsightsResult.Metric.engagement,
+                InstagramInsightsResult.Metric.saved
+            ],
+            "period": [
+                InstagramInsightsResult.Period.lifetime
+            ]
+        }
+
+        data = IGMedia(fb_obj_id).get_insights(params=params, fields=fields)
+
+    try:
+        video_views = data[4]["values"][0].get("value")
+    except:
+        video_views = 0
+
+    output = {
+        "impressions": data[0]["values"][0].get("value") or 0,
+        "reach": data[1]["values"][0].get("value") or 0,
+        "engagement": data[2]["values"][0].get("value") or 0,
+        "saved": data[3]["values"][0].get("value") or 0,
+        "video_views": video_views
+    }
+
+    return output
 
 
-obj_id = '17841431321059427'
+obj_id = '17855288603533239'
 app_id = '380213716446603'
 app_secret = 'f3bc4ff1f73d798c443cfed13badbd06'
-access_token = 'EAAFZAzWeB7YsBADDFIRChP20jZAilIEPxkmHwjmRIRAgZAOln9zZAMIOVj5ObPH6cZCo80FVCJfjese7cQpWZAXS3zHcowqSekfS3STZBivDpDIQXI7EAVSg6mIghR5roMAToHBBDx0WsuVO5fmMRI7GhIEnFPxHoFjr8eVqZCayYoZA4aDyT6w2LzdTQVjARcLkZD'
+access_token = 'EAAFZAzWeB7YsBAKrEmLdZAjBrotzZA5JZAxF23R6bQQ55ZByh0obnabCLKeKsJGeJ4r8dLnFeirICSwRZCZCfuMmT4BEiNk5wrKnenJJwZCUOsaTz46jYIabsBmb3rXR33SttPRRGvD4aalfMXZAGdbyEZCjQFxtwfBcD7eZA9PXis91ih6WuiXjFk0tfZCvWv02QmEZD'
 
 print(testing(obj_id, app_id, app_secret, access_token))

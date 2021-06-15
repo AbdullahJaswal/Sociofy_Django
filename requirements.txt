@@ -28,7 +28,7 @@ django-timezone-field==4.1.2
 djangorestframework==3.12.4
 djangorestframework-simplejwt==4.6.0
 drf-nested-routers==0.93.3
-facebook-business==10.0.0
+facebook-business==11.0.0
 facebook-sdk==3.1.0
 gevent==21.1.2
 greenlet==1.0.0

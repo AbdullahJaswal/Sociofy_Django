@@ -39,4 +39,143 @@ class IGPageDemographyAnalytic(models.Model):
     objects = models.Manager()
 
     def __str__(self):
-        return self.id
+        return str(self.id)
+
+
+class IGPageDailyImpressions(models.Model):
+    page = models.ForeignKey(IGPage, on_delete=models.CASCADE, default=None, null=True, blank=True)
+    pageID = models.BigIntegerField(default=None, null=True, blank=True)
+    datetime = models.DateTimeField(default=None, null=True, blank=True)
+    impressions = models.IntegerField(default=0, null=True, blank=True)
+
+    objects = models.Manager()
+
+    def __str__(self):
+        return str(self.id)
+
+
+class IGPageDailyReach(models.Model):
+    page = models.ForeignKey(IGPage, on_delete=models.CASCADE, default=None, null=True, blank=True)
+    pageID = models.BigIntegerField(default=None, null=True, blank=True)
+    datetime = models.DateTimeField(default=None, null=True, blank=True)
+    reach = models.IntegerField(default=0, null=True, blank=True)
+
+    objects = models.Manager()
+
+    def __str__(self):
+        return str(self.id)
+
+
+class IGPageDailyFollowerCount(models.Model):
+    page = models.ForeignKey(IGPage, on_delete=models.CASCADE, default=None, null=True, blank=True)
+    pageID = models.BigIntegerField(default=None, null=True, blank=True)
+    datetime = models.DateTimeField(default=None, null=True, blank=True)
+    follower_count = models.IntegerField(default=0, null=True, blank=True)
+
+    objects = models.Manager()
+
+    def __str__(self):
+        return str(self.id)
+
+
+class IGPageDailyEmailContacts(models.Model):
+    page = models.ForeignKey(IGPage, on_delete=models.CASCADE, default=None, null=True, blank=True)
+    pageID = models.BigIntegerField(default=None, null=True, blank=True)
+    datetime = models.DateTimeField(default=None, null=True, blank=True)
+    email_contacts = models.IntegerField(default=0, null=True, blank=True)
+
+    objects = models.Manager()
+
+    def __str__(self):
+        return str(self.id)
+
+
+class IGPageDailyPhoneCallClicks(models.Model):
+    page = models.ForeignKey(IGPage, on_delete=models.CASCADE, default=None, null=True, blank=True)
+    pageID = models.BigIntegerField(default=None, null=True, blank=True)
+    datetime = models.DateTimeField(default=None, null=True, blank=True)
+    phone_call_clicks = models.IntegerField(default=0, null=True, blank=True)
+
+    objects = models.Manager()
+
+    def __str__(self):
+        return str(self.id)
+
+
+class IGPageDailyTextMessageClicks(models.Model):
+    page = models.ForeignKey(IGPage, on_delete=models.CASCADE, default=None, null=True, blank=True)
+    pageID = models.BigIntegerField(default=None, null=True, blank=True)
+    datetime = models.DateTimeField(default=None, null=True, blank=True)
+    text_message_clicks = models.IntegerField(default=0, null=True, blank=True)
+
+    objects = models.Manager()
+
+    def __str__(self):
+        return str(self.id)
+
+
+class IGPageDailyDirectionsClicks(models.Model):
+    page = models.ForeignKey(IGPage, on_delete=models.CASCADE, default=None, null=True, blank=True)
+    pageID = models.BigIntegerField(default=None, null=True, blank=True)
+    datetime = models.DateTimeField(default=None, null=True, blank=True)
+    directions_clicks = models.IntegerField(default=0, null=True, blank=True)
+
+    objects = models.Manager()
+
+    def __str__(self):
+        return str(self.id)
+
+
+class IGPageDailyWebsiteClicks(models.Model):
+    page = models.ForeignKey(IGPage, on_delete=models.CASCADE, default=None, null=True, blank=True)
+    pageID = models.BigIntegerField(default=None, null=True, blank=True)
+    datetime = models.DateTimeField(default=None, null=True, blank=True)
+    website_clicks = models.IntegerField(default=0, null=True, blank=True)
+
+    objects = models.Manager()
+
+    def __str__(self):
+        return str(self.id)
+
+
+class IGPageDailyProfileViews(models.Model):
+    page = models.ForeignKey(IGPage, on_delete=models.CASCADE, default=None, null=True, blank=True)
+    pageID = models.BigIntegerField(default=None, null=True, blank=True)
+    datetime = models.DateTimeField(default=None, null=True, blank=True)
+    profile_views = models.IntegerField(default=0, null=True, blank=True)
+
+    objects = models.Manager()
+
+    def __str__(self):
+        return str(self.id)
+
+
+class IGPostAnalytic(models.Model):
+    post = models.ForeignKey(IGPost, on_delete=models.CASCADE, default=None, null=True, blank=True)
+    pageID = models.BigIntegerField(default=None, null=True, blank=True)
+    postID = models.BigIntegerField(default=None, null=True, blank=True)
+    updated_on = models.DateTimeField(default=None, null=True, blank=True)
+    impressions = models.IntegerField(default=0, null=True, blank=True)
+    reach = models.IntegerField(default=0, null=True, blank=True)
+    engagement = models.IntegerField(default=0, null=True, blank=True)
+    saved = models.IntegerField(default=0, null=True, blank=True)
+    video_views = models.IntegerField(default=0, null=True, blank=True)
+
+    objects = models.Manager()
+
+    def __str__(self):
+        return str(self.id)
+
+
+class IGPostRating(models.Model):
+    page = models.ForeignKey(IGPage, on_delete=models.CASCADE, default=None, null=True, blank=True)
+    post = models.ForeignKey(IGPost, on_delete=models.CASCADE, default=None, null=True, blank=True)
+    pageID = models.BigIntegerField(default=None, null=True, blank=True)
+    postID = models.BigIntegerField(default=None, null=True, blank=True)
+    datetime = models.DateTimeField(default=None, null=True, blank=True)
+    rating = models.DecimalField(default=0, max_digits=2, decimal_places=1)
+
+    objects = models.Manager()
+
+    def __str__(self):
+        return str(self.id)
