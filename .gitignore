@@ -7,3 +7,4 @@ migrations
 .rabbitmqlog
 .rabbitmqdata
 testing.py
+__init__.py
