@@ -29,7 +29,7 @@ services:
         build: .
         container_name: Celery
         restart: always
-        command: bash -c "pip install -r requirements.txt && celery --app=core worker --pool=gevent --concurrency=64 --loglevel=INFO -E"
+        command: bash -c "pip install --upgrade pip pip install -r requirements.txt && celery --app=core worker --pool=gevent --concurrency=64 --loglevel=INFO -E"
         volumes:
             - .:/usr/src/sociofy/backend/
         links:
@@ -40,7 +40,7 @@ services:
     django:
         build: .
         container_name: Django
-        command: bash -c "pip install -r requirements.txt && python manage.py runserver 0.0.0.0:8000"
+        command: bash -c "pip install --upgrade pip pip install -r requirements.txt && python manage.py runserver 0.0.0.0:8000"
         volumes:
             - .:/usr/src/sociofy/backend/
         restart: always
@@ -52,7 +52,7 @@ services:
     background_tasks:
         build: .
         container_name: Background_Tasks
-        command: bash -c "pip install -r requirements.txt && python manage.py process_tasks"
+        command: bash -c "pip install --upgrade pip pip install -r requirements.txt && python manage.py process_tasks"
         volumes:
             - .:/usr/src/sociofy/backend/
         restart: always

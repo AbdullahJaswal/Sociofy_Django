@@ -8,3 +8,4 @@ migrations
 .rabbitmqdata
 testing.py
 __init__.py
+igpagedailyanalytics.csv

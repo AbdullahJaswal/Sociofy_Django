@@ -14,6 +14,18 @@ class IGPageDemographyAnalyticSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class IGPageMetricsCorrelationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IGPageMetricsCorrelation
+        fields = '__all__'
+
+
+class IGPageDailyAnalyticsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IGPageDailyAnalytics
+        fields = '__all__'
+
+
 class IGPageDailyImpressionsSerializer(serializers.ModelSerializer):
     class Meta:
         model = IGPageDailyImpressions

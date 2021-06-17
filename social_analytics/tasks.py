@@ -6,6 +6,7 @@ from .models import *
 from sm_accounts.models import *
 from social_analytics.api.instagram.page.Page_Analytics import *
 from social_analytics.api.instagram.page.Page_Demography_Analytics import *
+from social_analytics.api.instagram.page.daily.All_Daily_Analytics import *
 from social_analytics.api.instagram.page.daily.Impressions_Analytic import *
 from social_analytics.api.instagram.page.daily.Reach_Analytic import *
 from social_analytics.api.instagram.page.daily.Follower_Count_Analytic import *
@@ -16,6 +17,7 @@ from social_analytics.api.instagram.page.daily.Get_Direction_Clicks_Analytic imp
 from social_analytics.api.instagram.page.daily.Website_Clicks_Analytic import *
 from social_analytics.api.instagram.page.daily.Profile_Views_Analytic import *
 from social_analytics.api.instagram.post.Post_Analytics import *
+from social_analytics.api.instagram.page.daily.metrics_correlation import *
 from django.utils import timezone
 from django.db.models import Q
 
@@ -84,12 +86,12 @@ def fetch_ig_page_analytics_data(page):
                         "website_clicks",
                         "profile_views"
                     ],
-                    key_fields=('pageID', 'today',),
+                    key_fields=('pageID', 'datetime',),
                     # Field(s) which is different in all records but always same for itself.
                     exclude_fields=('id', 'page', 'pageID',),
                     skip_creates=False,
                     skip_updates=False,
-                    skip_deletes=False,
+                    skip_deletes=True,
                     batch_size=50
                 )
 
@@ -165,7 +167,140 @@ def fetch_ig_page_demography_analytics_data(page):
                     exclude_fields=('id', 'page', 'pageID',),
                     skip_creates=False,
                     skip_updates=False,
+                    skip_deletes=True,
+                    batch_size=50
+                )
+
+                return True
+            else:
+                return False
+        else:
+            return False
+    except:
+        return False
+
+
+def fetch_ig_page_metrics_correlation_data(page):
+    try:
+        daily_analytics = IGPageDailyAnalytics.objects.filter(page=page).values()
+
+        data = metrics_correlation(list(daily_analytics))
+
+        if data:
+            pageAnalytics = [
+                IGPageMetricsCorrelation(
+                    page=page,
+                    pageID=page.page_id,
+                    created_on=timezone.now() or None,
+                    updated_on=timezone.now() or None,
+                    impressions_reach=data["impressions_reach"] or None,
+                    impressions_follower_count=data["impressions_follower_count"] or None,
+                    impression_profile_views=data["impression_profile_views"] or None,
+                    reach_follower_count=data["reach_follower_count"] or None,
+                    reach_profile_views=data["reach_profile_views"] or None,
+                    profile_views_follower_count=data["profile_views_follower_count"] or None
+                )
+            ]
+
+            if pageAnalytics:
+                bulk_sync(
+                    new_models=pageAnalytics,
+                    filters=Q(page=page.id),  # Field(s) which is same in all records.
+                    fields=[
+                        "updated_on",
+                        "impressions_reach",
+                        "impressions_follower_count",
+                        "impression_profile_views",
+                        "reach_follower_count",
+                        "reach_profile_views",
+                        "profile_views_follower_count"
+                    ],
+                    key_fields=('pageID',),
+                    # Field(s) which is different in all records but always same for itself.
+                    exclude_fields=('id', 'page', 'pageID', 'created_on'),
+                    skip_creates=False,
+                    skip_updates=False,
                     skip_deletes=False,
+                    batch_size=50
+                )
+
+                return True
+            else:
+                return False
+        else:
+            return False
+    except:
+        return False
+
+
+def fetch_ig_page_daily_analytics_data(page):
+    try:
+        fb_app = FacebookApp.objects.get(id=fb_app_number)
+
+        # Page ID is sent to get all posts data.
+        data = all_daily_analytics(page.page_id, fb_app.app_id, fb_app.app_secret, page.sm_account.access_token)
+
+        if data:
+            dailyData = []
+
+            for i in range(len(data[0]["values"])):
+                dailyData.append(
+                    IGPageDailyAnalytics(
+                        page=page,
+                        pageID=page.page_id,
+                        datetime=data[0]["values"][i].get("end_time") or None,
+                        impressions=(data[0]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[0]["values"]) else None,
+                        reach=(data[1]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[1]["values"]) else None,
+                        follower_count=(data[2]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[2]["values"]) else None,
+                        email_contacts=(data[3]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[3]["values"]) else None,
+                        phone_call_clicks=(data[4]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[4]["values"]) else None,
+                        text_message_clicks=(data[5]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[5]["values"]) else None,
+                        directions_clicks=(data[6]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[6]["values"]) else None,
+                        website_clicks=(data[7]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[7]["values"]) else None,
+                        profile_views=(data[8]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[8]["values"]) else None
+                    )
+                )
+
+            if dailyData:
+                bulk_sync(
+                    new_models=dailyData,
+                    filters=Q(page=page.id),  # Field(s) which is same in all records.
+                    fields=[
+                        "datetime",
+                        "impressions",
+                        "reach",
+                        "follower_count",
+                        "email_contacts",
+                        "phone_call_clicks",
+                        "text_message_clicks",
+                        "directions_clicks",
+                        "website_clicks",
+                        "profile_views"
+                    ],
+                    key_fields=('pageID', 'datetime'),
+                    # Field(s) which is different in all records but always same for itself.
+                    exclude_fields=('id', 'page', 'pageID',),
+                    skip_creates=False,
+                    skip_updates=False,
+                    skip_deletes=True,
                     batch_size=50
                 )
 
@@ -609,6 +744,7 @@ def fetch_ig_post_analytics_data(page, post_id):
                     post=post,
                     pageID=page.page_id,
                     postID=post.post_id,
+                    created_on=timezone.now(),
                     updated_on=timezone.now(),
                     impressions=data["impressions"],
                     reach=data["reach"],
@@ -632,10 +768,10 @@ def fetch_ig_post_analytics_data(page, post_id):
                     ],
                     key_fields=('postID',),
                     # Field(s) which is different in all records but always same for itself.
-                    exclude_fields=('id', 'post', 'pageID', 'postID',),
+                    exclude_fields=('id', 'post', 'pageID', 'postID', 'created_on'),
                     skip_creates=False,
                     skip_updates=False,
-                    skip_deletes=False,
+                    skip_deletes=True,
                     batch_size=50
                 )
 
