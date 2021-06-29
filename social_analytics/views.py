@@ -363,3 +363,26 @@ class IGPostRatingList(generics.ListAPIView):
                 return Response(status=status.HTTP_502_BAD_GATEWAY)
         except:
             return Response(status=status.HTTP_403_FORBIDDEN)
+
+
+class IGBestPostTimeList(generics.ListAPIView):
+    permission_classes = [permission]
+    throttle_classes = [UserRateThrottle]
+    serializer_class = IGBestPostTimeSerializer
+
+    def get_queryset(self):
+        return IGBestPostTime.objects.filter(page=self.kwargs.get('pk'))
+
+    # @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    def get(self, request, *args, **kwargs):
+        try:
+            page = IGPage.objects.select_related('sm_account').get(id=self.kwargs["pk"], user=self.request.user.id)
+
+            response = calculate_best_post_time(page)
+
+            if response:
+                return self.list(request, *args, **kwargs)
+            else:
+                return Response(status=status.HTTP_502_BAD_GATEWAY)
+        except:
+            return Response(status=status.HTTP_403_FORBIDDEN)

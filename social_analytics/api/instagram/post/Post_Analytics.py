@@ -6,7 +6,7 @@ from celery import shared_task
 
 
 @shared_task
-def post_analytics(obj_id, app_id, app_secret, access_token):
+def post_analytics(obj_id, app_id, app_secret, access_token, created_on=None):
     FacebookAdsApi.init(
         app_id=app_id,
         app_secret=app_secret,
@@ -57,13 +57,24 @@ def post_analytics(obj_id, app_id, app_secret, access_token):
     except:
         video_views = 0
 
-    output = {
-        "post_id": obj_id,
-        "impressions": data[0]["values"][0].get("value") or 0,
-        "reach": data[1]["values"][0].get("value") or 0,
-        "engagement": data[2]["values"][0].get("value") or 0,
-        "saved": data[3]["values"][0].get("value") or 0,
-        "video_views": video_views
-    }
+    if created_on is None:
+        output = {
+            "post_id": obj_id,
+            "impressions": data[0]["values"][0].get("value") or 0,
+            "reach": data[1]["values"][0].get("value") or 0,
+            "engagement": data[2]["values"][0].get("value") or 0,
+            "saved": data[3]["values"][0].get("value") or 0,
+            "video_views": video_views
+        }
+    else:
+        output = {
+            "post_id": obj_id,
+            "created_on": created_on,
+            "impressions": data[0]["values"][0].get("value") or 0,
+            "reach": data[1]["values"][0].get("value") or 0,
+            "engagement": data[2]["values"][0].get("value") or 0,
+            "saved": data[3]["values"][0].get("value") or 0,
+            "video_views": video_views
+        }
 
     return output

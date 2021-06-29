@@ -157,7 +157,7 @@ class IGPostCommentList(generics.ListCreateAPIView):
             serializer_class = IGPostCommentCreateSerializer
         return serializer_class
 
-    # @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
     def get(self, request, *args, **kwargs):
         page = IGPage.objects.get(id=self.kwargs.get('pk'))
 

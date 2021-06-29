@@ -1,6 +1,7 @@
 import json
 
 import numpy as np
+import pandas as pd
 
 from .models import *
 from sm_accounts.models import *
@@ -23,6 +24,8 @@ from django.db.models import Q
 
 from celery import group
 from bulk_sync import bulk_sync  # noqa. <-- Used to suppress error highlight.
+
+from .jobs.minimum_absolute_difference import minimum_absolute_difference
 
 fb_app_number = 2  # Change to 1 after Facebook App Review!
 
@@ -844,6 +847,92 @@ def fetch_ig_post_ratings(page):
                     key_fields=('postID',),
                     # Field(s) which is different in all records but always same for itself.
                     exclude_fields=('id', 'page', 'post', 'pageID', 'postID',),
+                    skip_creates=False,
+                    skip_updates=False,
+                    skip_deletes=False,
+                    batch_size=50
+                )
+
+            return True
+        else:
+            return False
+    except:
+        return False
+
+
+def calculate_best_post_time(page):
+    try:
+        fb_app = FacebookApp.objects.get(id=fb_app_number)
+
+        posts = IGPost.objects.filter(page=page)
+
+        if posts:
+            tasks = []
+            for post in posts:
+                tasks.append(
+                    post_analytics.s(post.post_id, fb_app.app_id, fb_app.app_secret, page.sm_account.access_token,
+                                     post.created_on)
+                )
+
+            task_group = group(*tasks)
+            result_group = task_group.apply_async()
+            tasksData = result_group.join()
+
+            pd.set_option('display.max_rows', 500)
+            pd.set_option('display.max_columns', 100)
+            pd.set_option('display.width', 1000)
+
+            df = pd.json_normalize(tasksData)
+
+            df['created_on'] = pd.to_datetime(df['created_on'], errors='raise')
+
+            df = df.drop(['post_id', 'reach', 'engagement', 'saved', 'video_views'], axis=1)
+
+            df_largest = df.nlargest(10, 'impressions')
+
+            values = df_largest['created_on'].dt.hour.value_counts().nlargest(3).keys().tolist()
+
+            minimum_difference = np.array(minimum_absolute_difference(values))
+            shape = minimum_difference.shape
+
+            if shape[0] == 1:
+                minimum_difference = np.squeeze(minimum_difference)
+                minimum_difference[0] = (minimum_difference[0] + 5) if (minimum_difference[0] + 5) < 24 else (
+                            (minimum_difference[0] + 5) - 24)
+                minimum_difference[1] = (minimum_difference[1] + 5) if (minimum_difference[1] + 5) < 24 else (
+                            (minimum_difference[1] + 5) - 24)
+            else:
+                minimum_difference = [
+                    (min(minimum_difference[0]) + 5) if (min(minimum_difference[0]) + 5) < 24 else (
+                                (min(minimum_difference[0]) + 5) - 24),
+                    (max(minimum_difference[1]) + 5) if (max(minimum_difference[1]) + 5) < 24 else (
+                                (max(minimum_difference[1]) + 5) - 24)
+                ]
+
+            print(minimum_difference)
+
+            best_time = [
+                IGBestPostTime(
+                    page=page,
+                    pageID=page.page_id,
+                    modified_on=timezone.now(),
+                    start=minimum_difference[0],
+                    end=minimum_difference[1]
+                )
+            ]
+
+            if best_time:
+                bulk_sync(
+                    new_models=best_time,
+                    filters=Q(page=page.id),  # Field(s) which is same in all records.
+                    fields=[
+                        "modified_on",
+                        "start",
+                        "end"
+                    ],
+                    key_fields=('pageID',),
+                    # Field(s) which is different in all records but always same for itself.
+                    exclude_fields=('id', 'page', 'pageID',),
                     skip_creates=False,
                     skip_updates=False,
                     skip_deletes=False,

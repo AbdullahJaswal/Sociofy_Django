@@ -1,3 +1,4 @@
+import configs
 from rest_framework import generics
 from .serializers import *
 
@@ -7,6 +8,8 @@ from rest_framework import status
 
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
+
+from django.db.models import Count
 
 from .tasks import *
 
@@ -178,7 +181,7 @@ class FBPostCommentList(generics.ListCreateAPIView):
             serializer_class = FBPostCommentCreateSerializer
         return serializer_class
 
-    # @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
     def get(self, request, *args, **kwargs):
         page = FBPage.objects.get(id=self.kwargs.get('pk'))
 
@@ -261,6 +264,30 @@ class FBPostCommentDetail(generics.RetrieveDestroyAPIView):
 
 
 class FBPostTagsList(generics.ListAPIView):
-    permission_classes = [permission]  # Should be IsAdmin
+    permission_classes = [configs.AllowAny]  # Should be IsAdmin
     queryset = FBPostTag.objects.all()
     serializer_class = FBPostTagsSerializer
+
+    def get_queryset(self):
+        length = 7
+        most_occuring = FBPostTag.objects.values_list('tag').annotate(tag_count=Count('tag')).order_by('-tag_count')
+
+        most_occuring_tags = []
+        for idx, tag in enumerate(most_occuring):
+            if idx < length:
+                most_occuring_tags.append(tag[0])
+            else:
+                break
+
+        tags = FBPostTag.objects.all()
+        tag_ids = []
+        for idx, tag in enumerate(tags):
+            for idx2, m_o_t in enumerate(most_occuring_tags):
+                if tag.tag == m_o_t:
+                    tag_ids.append(idx)
+                    most_occuring_tags.pop(idx2)
+
+            if len(tag_ids) == length:
+                break
+
+        return FBPostTag.objects.filter(id__in=tag_ids)

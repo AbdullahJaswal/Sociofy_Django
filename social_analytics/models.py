@@ -42,7 +42,7 @@ class IGPageDemographyAnalytic(models.Model):
     objects = models.Manager()
 
     class Meta:
-        ordering = ('datetime',)
+        ordering = ('-datetime',)
 
     def __str__(self):
         return str(self.id)
@@ -257,6 +257,22 @@ class IGPostRating(models.Model):
 
     class Meta:
         ordering = ('datetime',)
+
+    def __str__(self):
+        return str(self.id)
+
+
+class IGBestPostTime(models.Model):
+    page = models.ForeignKey(IGPage, on_delete=models.CASCADE, default=None, null=True, blank=True)
+    pageID = models.BigIntegerField(default=None, null=True, blank=True)
+    modified_on = models.DateTimeField(default=None, null=True, blank=True)
+    start = models.IntegerField(default=None, null=True, blank=True)
+    end = models.IntegerField(default=None, null=True, blank=True)
+
+    objects = models.Manager()
+
+    class Meta:
+        ordering = ('id',)
 
     def __str__(self):
         return str(self.id)

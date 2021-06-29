@@ -3,7 +3,7 @@ from facebook_business.adobjects.instagraminsightsresult import InstagramInsight
 from facebook_business.api import FacebookAdsApi
 
 
-def page_analytics(fb_obj_id, app_id, app_secret, access_token):
+def page_analytics(obj_id, app_id, app_secret, access_token):
     FacebookAdsApi.init(
         app_id=app_id,
         app_secret=app_secret,
@@ -36,4 +36,4 @@ def page_analytics(fb_obj_id, app_id, app_secret, access_token):
         InstagramInsightsResult.Field.values
     }
 
-    return IGUser(fb_obj_id).get_insights(params=params, fields=fields)
+    return IGUser(obj_id).get_insights(params=params, fields=fields)

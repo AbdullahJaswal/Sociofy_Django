@@ -90,3 +90,9 @@ class IGPostRatingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = IGPostRating
         fields = '__all__'
+
+
+class IGBestPostTimeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IGBestPostTime
+        fields = '__all__'

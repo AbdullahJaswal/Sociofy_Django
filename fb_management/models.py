@@ -102,7 +102,7 @@ class FBPostTag(models.Model):
     objects = models.Manager()
 
     class Meta:
-        ordering = ('-created_on',)
+        ordering = ('id',)
 
     def __str__(self):
         return str(self.id)

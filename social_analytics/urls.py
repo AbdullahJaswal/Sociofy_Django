@@ -31,4 +31,5 @@ urlpatterns = [
          name='igPageDailyProfileViewsList'),
     path('instagram/page/<int:pk>/post/<int:ppk>/', IGPostAnalyticList.as_view(), name='igPostAnalyticList'),
     path('instagram/page/<int:pk>/ratings/', IGPostRatingList.as_view(), name='igPostRatingList'),
+    path('instagram/page/<int:pk>/best_time/', IGBestPostTimeList.as_view(), name='igBestPostTimeList'),
 ]
