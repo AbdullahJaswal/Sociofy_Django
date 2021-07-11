@@ -25,6 +25,9 @@ class IGPageList(generics.ListAPIView):
     queryset = IGPage.objects.all()
     serializer_class = IGPageSerializer
 
+    def get_queryset(self):
+        return IGPage.objects.filter(user=self.request.user.id)
+
     @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
     def get(self, request, *args, **kwargs):
         try:
@@ -96,7 +99,7 @@ class IGPostList(generics.ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         PAGE = 17841446538771918  # kwargs.get('pk') HARD CODED Dummy Page for Create Post!
 
-        page = IGPage.objects.get(page_id=PAGE)
+        page = IGPage.objects.get(page_id=PAGE, user_id=self.request.user.id)
 
         if page.user_id == self.request.user.id:
             if (request.data['caption'] is None and request.data['media_type'] is None and request.data[

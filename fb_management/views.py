@@ -103,7 +103,7 @@ class FBPostList(generics.ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         PAGE = 112531917317825  # kwargs.get('pk') HARD CODED Dummy Page for Create Post!
 
-        page = FBPage.objects.get(page_id=PAGE)
+        page = FBPage.objects.get(page_id=PAGE, user_id=self.request.user.id)
 
         if page.user_id == self.request.user.id:
             if (request.data['message'] is None and request.data['link'] is None and request.data['media'] is None) or (

@@ -26,6 +26,12 @@ class IGPageDailyAnalyticsSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class IGPageDailyAnalyticsNOOUTLIERSSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IGPageDailyAnalyticsNOOUTLIERS
+        fields = '__all__'
+
+
 class IGPageDailyImpressionsSerializer(serializers.ModelSerializer):
     class Meta:
         model = IGPageDailyImpressions

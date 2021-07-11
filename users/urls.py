@@ -6,5 +6,6 @@ app_name = 'users'
 urlpatterns = [
     path('register/', CustomUserCreate.as_view(), name='create_user'),
     path('logout/blacklist/', BlacklistTokenUpdateView.as_view(), name='blacklist'),
-    path('id/', UserList.as_view(), name='userList')
+    path('id/', UserList.as_view(), name='userList'),
+    path('<int:pk>/', UserDetail.as_view(), name='userDetail')
 ]

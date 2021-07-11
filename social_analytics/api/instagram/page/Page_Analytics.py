@@ -16,7 +16,7 @@ def page_analytics(obj_id, app_id, app_secret, access_token):
         "metric": [
             "impressions",
             "reach",
-            "follower_count",
+            # "follower_count",
             "email_contacts",
             "phone_call_clicks",
             "text_message_clicks",

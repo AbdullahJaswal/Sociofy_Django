@@ -52,3 +52,10 @@ class UserList(generics.ListAPIView):
 
     def get_queryset(self):
         return User.objects.filter(id=self.request.user.id)
+
+
+class UserDetail(generics.RetrieveAPIView):
+    permission_classes = [permission]
+    throttle_classes = [UserRateThrottle]
+    queryset = User.objects.all()
+    serializer_class = UserSerializer

@@ -17,11 +17,16 @@ class TeamViewSet(viewsets.ModelViewSet):
     throttle_classes = [UserRateThrottle]
 
     def get_queryset(self):
-        return Team.objects.filter(user=self.request.user.id)
+        members = Member.objects.filter(user=self.request.user.id, status='joined')
+
+        team_ids = []
+        for member in members:
+            team_ids.append(member.team.id)
+
+        return Team.objects.filter(id__in=team_ids)
 
     def create(self, request, *args, **kwargs):
         datetime = timezone.now().isoformat()
-        print(request.data)
         request.data.update({
             "created_on": datetime,
             "modified_on": datetime,
@@ -35,10 +40,14 @@ class TeamViewSet(viewsets.ModelViewSet):
 
         Member.objects.create(
             user=self.request.user,
+            name=self.request.user.first_name + ' ' + self.request.user.last_name,
+            username=self.request.user.username,
             team=Team.objects.get(id=serializer.data['id']),
             role=Role.objects.get(id=1),
             added_on=datetime,
-            status='joined'
+            status='joined',
+            shown=True,
+            team_name=request.data['name']
         )
 
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
@@ -54,10 +63,17 @@ class MemberViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         datetime = timezone.now().isoformat()
+
+        user = User.objects.get(username=request.data['username'])
+        team = Team.objects.get(id=self.kwargs['_pk'])
+
         request.data.update({
+            "name": user.first_name + ' ' + user.last_name,
             "added_on": datetime,
             "status": "pending",
-            "team": self.kwargs['_pk']
+            "team": team.id,
+            "user": user.id,
+            "team_name": team.name
         })
 
         serializer = self.get_serializer(data=request.data)
@@ -86,37 +102,68 @@ class InviteViewSet(viewsets.ModelViewSet):
                     "modified_on": datetime
                 })
 
-                team = Team.objects.get(id=invite.team.id)
+                if request.data.get('status') == "joined":
+                    team = Team.objects.get(id=invite.team.id)
 
-                if team.fb_page:
-                    fb_account = FacebookAccounts.objects.get(id=team.fb_page.id)
+                    if team.fb_page:
+                        fb_account = FacebookAccounts.objects.get(id=team.fb_page.id)
 
-                    FacebookAccounts.objects.create(
-                        user=self.request.user,
-                        role=invite.role,
-                        facebook_id=fb_account.facebook_id,
-                        length=fb_account.length,
-                        access_token=fb_account.access_token,
-                        reauthorize_in_seconds=fb_account.reauthorize_in_seconds,
-                        signed_request=fb_account.signed_request,
-                        created_on=fb_account.created_on,
-                        expires_on=fb_account.expires_on
-                    )
+                        FacebookAccounts.objects.create(
+                            user=self.request.user,
+                            role=invite.role,
+                            facebook_id=fb_account.facebook_id,
+                            length=fb_account.length,
+                            access_token=fb_account.access_token,
+                            reauthorize_in_seconds=fb_account.reauthorize_in_seconds,
+                            signed_request=fb_account.signed_request,
+                            created_on=fb_account.created_on,
+                            expires_on=fb_account.expires_on
+                        )
 
-                if team.ig_page:
-                    ig_account = InstagramAccounts.objects.get(id=team.ig_page.id)
+                    if team.ig_page:
+                        ig_account = InstagramAccounts.objects.get(id=team.ig_page.id)
 
-                    InstagramAccounts.objects.create(
-                        user=self.request.user,
-                        role=invite.role,
-                        instagram_id=ig_account.instagram_id,
-                        length=ig_account.length,
-                        access_token=ig_account.access_token,
-                        reauthorize_in_seconds=ig_account.reauthorize_in_seconds,
-                        signed_request=ig_account.signed_request,
-                        created_on=ig_account.created_on,
-                        expires_on=ig_account.expires_on
-                    )
+                        InstagramAccounts.objects.create(
+                            user=self.request.user,
+                            role=invite.role,
+                            instagram_id=ig_account.instagram_id,
+                            length=ig_account.length,
+                            access_token=ig_account.access_token,
+                            reauthorize_in_seconds=ig_account.reauthorize_in_seconds,
+                            signed_request=ig_account.signed_request,
+                            created_on=ig_account.created_on,
+                            expires_on=ig_account.expires_on
+                        )
+
+                    if team.fb_page2:
+                        fb_account = FacebookAccounts.objects.get(id=team.fb_page2.id)
+
+                        FacebookAccounts.objects.create(
+                            user=self.request.user,
+                            role=invite.role,
+                            facebook_id=fb_account.facebook_id,
+                            length=fb_account.length,
+                            access_token=fb_account.access_token,
+                            reauthorize_in_seconds=fb_account.reauthorize_in_seconds,
+                            signed_request=fb_account.signed_request,
+                            created_on=fb_account.created_on,
+                            expires_on=fb_account.expires_on
+                        )
+
+                    if team.ig_page2:
+                        ig_account = InstagramAccounts.objects.get(id=team.ig_page2.id)
+
+                        InstagramAccounts.objects.create(
+                            user=self.request.user,
+                            role=invite.role,
+                            instagram_id=ig_account.instagram_id,
+                            length=ig_account.length,
+                            access_token=ig_account.access_token,
+                            reauthorize_in_seconds=ig_account.reauthorize_in_seconds,
+                            signed_request=ig_account.signed_request,
+                            created_on=ig_account.created_on,
+                            expires_on=ig_account.expires_on
+                        )
 
                 partial = kwargs.pop('partial', False)
                 instance = self.get_object()
@@ -133,6 +180,14 @@ class InviteViewSet(viewsets.ModelViewSet):
         except:
             return Response(status=status.HTTP_502_BAD_GATEWAY)
 
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        # Member.objects.get(id=self.kwargs['pk']).delete()
+
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class TaskViewSet(viewsets.ModelViewSet):
     permission_classes = [permission]
@@ -143,6 +198,10 @@ class TaskViewSet(viewsets.ModelViewSet):
         return Task.objects.filter(team=self.kwargs['_pk'])
 
     def create(self, request, *args, **kwargs):
+        members = request.data.get('member')
+
+        members.append(self.request.user.id)
+
         datetime = timezone.now().isoformat()
         request.data.update({
             "created_on": datetime,

@@ -3,6 +3,8 @@ from facebook_business.api import FacebookAdsApi
 import requests
 import base64
 
+from django.core.cache import cache
+
 
 def createFBPost(fb_obj_id, app_id, app_secret, access_token, message=None, link=None, pictures=None, video=None):
     FacebookAdsApi.init(
@@ -13,42 +15,49 @@ def createFBPost(fb_obj_id, app_id, app_secret, access_token, message=None, link
         crash_log=False
     )
 
-    if pictures:
+    if pictures and pictures is not None:
         params = {
             'message': message
         }
         count = 0
 
         for picture in pictures:
-            with open(picture, "rb") as image:
-                url = "https://api.imgbb.com/1/upload"
-                api_key = "799fb189a04183d6671800a48da0098c"
-                expiration = 300
+            if picture is not None:
+                file_path = "/usr/src/sociofy/backend/media/" + picture
 
-                payload = {
-                    "key": api_key,
-                    "expiration": expiration,
-                    "image": base64.b64encode(image.read()),
-                }
+                with open(file_path, "rb") as image:
+                    url = "https://api.imgbb.com/1/upload"
+                    api_key = "799fb189a04183d6671800a48da0098c"
+                    expiration = 300
 
-                response = requests.post(url, payload).json()
+                    payload = {
+                        "key": api_key,
+                        "expiration": expiration,
+                        "image": base64.b64encode(image.read()),
+                    }
 
-                uploadParams = {
-                    'url': response["data"]["url"],
-                    'published': False
-                }
+                    response = requests.post(url, payload).json()
 
-                try:
-                    id = Page(fb_obj_id).create_photo(params=uploadParams)
+                    uploadParams = {
+                        'url': response["data"]["url"],
+                        'published': False
+                    }
 
-                    param = 'attached_media[' + str(count) + ']'
-                    params[param] = {'media_fbid': id['id']}
+                    try:
+                        id = Page(fb_obj_id).create_photo(params=uploadParams)
 
-                    count += 1
-                except:
-                    return False
+                        param = 'attached_media[' + str(count) + ']'
+                        params[param] = {'media_fbid': id['id']}
+
+                        count += 1
+                    except:
+                        return False
+            else:
+                return False
         try:
             Page(fb_obj_id).create_feed(params=params)
+
+            cache.clear()
             return True
         except:
             return False
@@ -60,6 +69,8 @@ def createFBPost(fb_obj_id, app_id, app_secret, access_token, message=None, link
 
         try:
             Page(fb_obj_id).create_feed(params=params)
+
+            cache.clear()
             return True
         except:
             return False

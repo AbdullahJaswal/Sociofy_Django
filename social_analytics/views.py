@@ -111,6 +111,29 @@ class IGPageDailyAnalyticsList(generics.ListAPIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
 
+class IGPageDailyAnalyticsNOOUTLIERSList(generics.ListAPIView):
+    permission_classes = [permission]
+    throttle_classes = [UserRateThrottle]
+    serializer_class = IGPageDailyAnalyticsNOOUTLIERSSerializer
+
+    def get_queryset(self):
+        return IGPageDailyAnalyticsNOOUTLIERS.objects.filter(page=self.kwargs.get('pk'))
+
+    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    def get(self, request, *args, **kwargs):
+        try:
+            page = IGPage.objects.select_related('sm_account').get(id=self.kwargs["pk"], user=self.request.user.id)
+
+            response = fetch_ig_page_daily_analytics_data_NO_OUTLIERS(page)
+
+            if response:
+                return self.list(request, *args, **kwargs)
+            else:
+                return Response(status=status.HTTP_502_BAD_GATEWAY)
+        except:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+
 class IGPageDailyImpressionsList(generics.ListAPIView):
     permission_classes = [permission]
     throttle_classes = [UserRateThrottle]

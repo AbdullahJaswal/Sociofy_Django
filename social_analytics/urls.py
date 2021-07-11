@@ -11,6 +11,8 @@ urlpatterns = [
          name='igPageMetricsCorrelationList'),
     path('instagram/page/<int:pk>/analytics/', IGPageDailyAnalyticsList.as_view(),
          name='igPageDailyAnalyticsList'),
+    path('instagram/page/<int:pk>/analytics_no_outliers/', IGPageDailyAnalyticsNOOUTLIERSList.as_view(),
+         name='igPageDailyAnalyticsNOOUTLIERSList'),
     path('instagram/page/<int:pk>/impressions/', IGPageDailyImpressionsList.as_view(),
          name='igPageDailyImpressionsList'),
     path('instagram/page/<int:pk>/reach/', IGPageDailyReachList.as_view(),

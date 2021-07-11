@@ -18,7 +18,7 @@ class FacebookAccountsList(generics.ListCreateAPIView):  # Change to ONLY Create
     def get_queryset(self):
         return FacebookAccounts.objects.filter(user=self.request.user.id)
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    # @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
@@ -33,6 +33,6 @@ class InstagramAccountsList(generics.ListCreateAPIView):  # Change to ONLY Creat
     def get_queryset(self):
         return InstagramAccounts.objects.filter(user=self.request.user.id)
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    # @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)

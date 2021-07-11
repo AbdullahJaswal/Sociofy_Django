@@ -2,6 +2,7 @@ import json
 
 import numpy as np
 import pandas as pd
+from scipy.stats import stats  # noqa. <-- Used to suppress error highlight.
 
 from .models import *
 from sm_accounts.models import *
@@ -94,7 +95,7 @@ def fetch_ig_page_analytics_data(page):
                     exclude_fields=('id', 'page', 'pageID',),
                     skip_creates=False,
                     skip_updates=False,
-                    skip_deletes=True,
+                    skip_deletes=False,
                     batch_size=50
                 )
 
@@ -306,6 +307,168 @@ def fetch_ig_page_daily_analytics_data(page):
                     skip_deletes=True,
                     batch_size=50
                 )
+
+                return True
+            else:
+                return False
+        else:
+            return False
+    except:
+        return False
+
+
+def fetch_ig_page_daily_analytics_data_NO_OUTLIERS(page):
+    try:
+        fb_app = FacebookApp.objects.get(id=fb_app_number)
+
+        # Page ID is sent to get all posts data.
+        data = all_daily_analytics(page.page_id, fb_app.app_id, fb_app.app_secret, page.sm_account.access_token)
+
+        if data:
+            dailyData = []
+
+            for i in range(len(data[0]["values"])):
+                dailyData.append(
+                    IGPageDailyAnalytics(
+                        page=page,
+                        pageID=page.page_id,
+                        datetime=data[0]["values"][i].get("end_time") or None,
+                        impressions=(data[0]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[0]["values"]) else None,
+                        reach=(data[1]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[1]["values"]) else None,
+                        follower_count=(data[2]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[2]["values"]) else None,
+                        email_contacts=(data[3]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[3]["values"]) else None,
+                        phone_call_clicks=(data[4]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[4]["values"]) else None,
+                        text_message_clicks=(data[5]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[5]["values"]) else None,
+                        directions_clicks=(data[6]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[6]["values"]) else None,
+                        website_clicks=(data[7]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[7]["values"]) else None,
+                        profile_views=(data[8]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[8]["values"]) else None
+                    )
+                )
+
+            if dailyData:
+                bulk_sync(
+                    new_models=dailyData,
+                    filters=Q(page=page.id),  # Field(s) which is same in all records.
+                    fields=[
+                        "datetime",
+                        "impressions",
+                        "reach",
+                        "follower_count",
+                        "email_contacts",
+                        "phone_call_clicks",
+                        "text_message_clicks",
+                        "directions_clicks",
+                        "website_clicks",
+                        "profile_views"
+                    ],
+                    key_fields=('pageID', 'datetime'),
+                    # Field(s) which is different in all records but always same for itself.
+                    exclude_fields=('id', 'page', 'pageID',),
+                    skip_creates=False,
+                    skip_updates=False,
+                    skip_deletes=True,
+                    batch_size=50
+                )
+
+                page_daily_analytics = IGPageDailyAnalytics.objects.filter(page=page)
+                newList = []
+
+                for analytic in page_daily_analytics:
+                    newList.append({
+                        "impressions": analytic.impressions,
+                        "reach": analytic.reach,
+                        "follower_count": analytic.follower_count,
+                        "email_contacts": analytic.email_contacts,
+                        "phone_call_clicks": analytic.phone_call_clicks,
+                        "text_message_clicks": analytic.text_message_clicks,
+                        "directions_clicks": analytic.directions_clicks,
+                        "website_clicks": analytic.website_clicks,
+                        "profile_views": analytic.profile_views
+                    })
+
+                pd.set_option('display.max_rows', 500)
+                pd.set_option('display.max_columns', 100)
+                pd.set_option('display.width', 1000)
+
+                df = pd.json_normalize(newList)
+
+                df = df[
+                    [
+                        'impressions',
+                        'reach',
+                        'follower_count',
+                        'website_clicks',
+                        'profile_views'
+                    ]
+                ]
+
+                df = df.dropna()
+
+                z_scores = stats.zscore(df)
+                abs_z_scores = np.abs(z_scores)
+                filtered_entries = (abs_z_scores < 2).all(axis=1)
+                new_df = df[filtered_entries]
+
+                impressions = new_df['impressions'].tolist()
+                reach = new_df['reach'].tolist()
+                follower_count = new_df['follower_count'].tolist()
+                website_clicks = new_df['website_clicks'].tolist()
+                profile_views = new_df['profile_views'].tolist()
+
+                noOutliers = []
+
+                for i in range(len(impressions)):
+                    noOutliers.append(
+                        IGPageDailyAnalyticsNOOUTLIERS(
+                            page=page,
+                            pageID=page.page_id,
+                            datetime=timezone.now(),
+                            impressions=impressions[i],
+                            reach=reach[i],
+                            follower_count=follower_count[i],
+                            website_clicks=website_clicks[i],
+                            profile_views=profile_views[i],
+                        )
+                    )
+
+                if noOutliers:
+                    bulk_sync(
+                        new_models=noOutliers,
+                        filters=Q(page=page.id),  # Field(s) which is same in all records.
+                        fields=[
+                            "datetime",
+                            "impressions",
+                            "reach",
+                            "follower_count",
+                            "website_clicks",
+                            "profile_views"
+                        ],
+                        key_fields=('pageID', 'impressions'),
+                        # Field(s) which is different in all records but always same for itself.
+                        exclude_fields=('id', 'page', 'pageID',),
+                        skip_creates=False,
+                        skip_updates=False,
+                        skip_deletes=True,
+                        batch_size=50
+                    )
 
                 return True
             else:
@@ -898,15 +1061,15 @@ def calculate_best_post_time(page):
             if shape[0] == 1:
                 minimum_difference = np.squeeze(minimum_difference)
                 minimum_difference[0] = (minimum_difference[0] + 5) if (minimum_difference[0] + 5) < 24 else (
-                            (minimum_difference[0] + 5) - 24)
+                        (minimum_difference[0] + 5) - 24)
                 minimum_difference[1] = (minimum_difference[1] + 5) if (minimum_difference[1] + 5) < 24 else (
-                            (minimum_difference[1] + 5) - 24)
+                        (minimum_difference[1] + 5) - 24)
             else:
                 minimum_difference = [
                     (min(minimum_difference[0]) + 5) if (min(minimum_difference[0]) + 5) < 24 else (
-                                (min(minimum_difference[0]) + 5) - 24),
+                            (min(minimum_difference[0]) + 5) - 24),
                     (max(minimum_difference[1]) + 5) if (max(minimum_difference[1]) + 5) < 24 else (
-                                (max(minimum_difference[1]) + 5) - 24)
+                            (max(minimum_difference[1]) + 5) - 24)
                 ]
 
             print(minimum_difference)

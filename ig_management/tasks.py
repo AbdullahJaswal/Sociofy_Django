@@ -52,13 +52,13 @@ def fetch_ig_pages_data(user):
                         follows_count=data[i]['follows_count'],
                         website=data[i]['website'],
                         biography=data[i]['biography'],
-                        media_count=data[i]['media_count'],
+                        media_count=data[i]['media_count']
                     ))
 
             if pages:
                 bulk_sync(
                     new_models=pages,
-                    filters=[],  # Some field which is same in all records.
+                    filters=Q(user=user.id),  # Some field which is same in all records.
                     fields=[
                         'modified_on',
                         'name',
@@ -71,7 +71,7 @@ def fetch_ig_pages_data(user):
                         'media_count'
                     ],
                     key_fields=('page_id',),  # Field(s) which is different in all records but always same for itself.
-                    exclude_fields=('id', 'user', 'sm_account', 'page_id', 'page_ig_id',),
+                    exclude_fields=('id', 'sm_account', 'page_id', 'page_ig_id', 'user'),
                     skip_creates=False,
                     skip_updates=False,
                     skip_deletes=False,
@@ -110,7 +110,7 @@ def fetch_ig_page_data(local_page_id):
                     follows_count=data['follows_count'],
                     website=data['website'],
                     biography=data['biography'],
-                    media_count=data['media_count'],
+                    media_count=data['media_count']
                 ))
 
             if pages:

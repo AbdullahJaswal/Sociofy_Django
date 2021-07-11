@@ -89,6 +89,25 @@ class IGPageDailyAnalytics(models.Model):
         return str(self.id)
 
 
+class IGPageDailyAnalyticsNOOUTLIERS(models.Model):
+    page = models.ForeignKey(IGPage, on_delete=models.CASCADE, default=None, null=True, blank=True)
+    pageID = models.BigIntegerField(default=None, null=True, blank=True)
+    datetime = models.DateTimeField(default=None, null=True, blank=True)
+    impressions = models.IntegerField(default=0, null=True, blank=True)
+    reach = models.IntegerField(default=0, null=True, blank=True)
+    follower_count = models.IntegerField(default=0, null=True, blank=True)
+    website_clicks = models.IntegerField(default=0, null=True, blank=True)
+    profile_views = models.IntegerField(default=0, null=True, blank=True)
+
+    objects = models.Manager()
+
+    class Meta:
+        ordering = ('datetime',)
+
+    def __str__(self):
+        return str(self.id)
+
+
 class IGPageDailyImpressions(models.Model):
     page = models.ForeignKey(IGPage, on_delete=models.CASCADE, default=None, null=True, blank=True)
     pageID = models.BigIntegerField(default=None, null=True, blank=True)

@@ -69,7 +69,7 @@ def fetch_fb_pages_data(user):
             if pages:
                 bulk_sync(
                     new_models=pages,
-                    filters=[],  # Some field which is same in all records.
+                    filters=Q(user=user.id),  # Some field which is same in all records.
                     fields=[
                         'modified_on',
                         'name',
@@ -86,12 +86,13 @@ def fetch_fb_pages_data(user):
                         'whatsapp_number',
                         'website',
                         'can_post',
-                        'connected_instagram_account',
-                        'user'
+                        'connected_instagram_account'
                     ],
                     key_fields=('fb_link',),
-                    exclude_fields=('id', 'sm_account', 'page_id', 'fb_link',),
-                    skip_deletes=True,
+                    exclude_fields=('id', 'sm_account', 'page_id', 'fb_link', 'user'),
+                    skip_creates=False,
+                    skip_updates=False,
+                    skip_deletes=False,
                     batch_size=50
                 )
 

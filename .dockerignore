@@ -1,11 +1,6 @@
 *.idea/
 *.dist/
 *.vscode/
-__pycache__/
-migrations/
 *.dbdata/
 *.rabbitmqlog/
 *.rabbitmqdata/
-testing.py/
-__init__.py/
-igpagedailyanalytics.csv/
