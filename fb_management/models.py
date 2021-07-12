@@ -93,7 +93,6 @@ class FBPostComment(models.Model):
 
 
 class FBPostTag(models.Model):
-    page = models.ForeignKey(FBPage, on_delete=models.CASCADE, default=None, null=True, blank=True)
     tag_id = models.CharField(max_length=128, default=None, null=True, blank=True)
     tag = models.CharField(max_length=128, default=None, null=True, blank=True)
     created_on = models.DateTimeField(default=timezone.now, null=True, blank=True)

@@ -7,7 +7,6 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
 
 from django.db.models import Count
 
@@ -15,7 +14,7 @@ from .tasks import *
 
 from users.models import User
 
-from configs import permission
+from configs import permission, caching
 
 
 # user = 1  # Replace 'user' to self.request.user.id with FIND and REPLACE and remove this variable.
@@ -30,7 +29,7 @@ class FBPageList(generics.ListAPIView):
     def get_queryset(self):
         return FBPage.objects.filter(user=self.request.user.id)
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         try:
             userObj = User.objects.get(id=self.request.user.id)
@@ -54,7 +53,7 @@ class FBPageDetail(generics.RetrieveAPIView):
     def get_queryset(self):
         return FBPage.objects.filter(user=self.request.user.id)
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         page = FBPage.objects.get(id=self.kwargs.get('pk'))
 
@@ -86,7 +85,7 @@ class FBPostList(generics.ListCreateAPIView):
             serializer_class = FBPostCreateSerializer
         return serializer_class
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         page = FBPage.objects.get(id=self.kwargs.get('pk'))
 
@@ -133,7 +132,7 @@ class FBPostDetail(generics.RetrieveDestroyAPIView):
     def get_queryset(self):
         return FBPost.objects.filter(id=self.kwargs.get('ppk'), page=self.kwargs.get('pk'))
 
-    # @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         page = FBPage.objects.get(id=self.kwargs.get('pk'))
 
@@ -149,12 +148,12 @@ class FBPostDetail(generics.RetrieveDestroyAPIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
     def delete(self, request, *args, **kwargs):
-        PAGE = 2  # kwargs.get('pk') HARD CODED Dummy Page for Delete Post!
+        PAGE = 112531917317825  # kwargs.get('pk') HARD CODED Dummy Page for Delete Post!
 
-        page = FBPage.objects.get(id=self.kwargs.get('pk'))
+        page = FBPage.objects.get(page_id=PAGE, user=self.request.user.id)
 
         if page.user_id == self.request.user.id:
-            response = delete_fb_post(PAGE, self.request.user.id, kwargs.get('ppk'))  # Local Page ID & Local Post ID
+            response = delete_fb_post(page.id, self.request.user.id, kwargs.get('ppk'))  # Local Page ID & Local Post ID
 
             if response:
                 return Response(status=status.HTTP_200_OK)
@@ -181,9 +180,9 @@ class FBPostCommentList(generics.ListCreateAPIView):
             serializer_class = FBPostCommentCreateSerializer
         return serializer_class
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
-        page = FBPage.objects.get(id=self.kwargs.get('pk'))
+        page = FBPage.objects.get(id=self.kwargs.get('pk'), user=self.request.user.id)
 
         if page.user_id == self.request.user.id:
             response = fetch_fb_post_comments_data(kwargs.get('pk'), kwargs.get('ppk'),
@@ -197,9 +196,9 @@ class FBPostCommentList(generics.ListCreateAPIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
     def post(self, request, *args, **kwargs):
-        PAGE = 2  # kwargs.get('pk') HARD CODED Dummy Page for Create Post!
+        PAGE = 112531917317825  # kwargs.get('pk') HARD CODED Dummy Page for Delete Post!
 
-        page = FBPage.objects.get(id=PAGE)
+        page = FBPage.objects.get(page_id=PAGE, user=self.request.user.id)
 
         if page.user_id == self.request.user.id:
             if (request.data['message'] is None and request.data['attachment_type'] is None and request.data[
@@ -208,10 +207,10 @@ class FBPostCommentList(generics.ListCreateAPIView):
                 'attachment'] == ''):
                 return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
             else:
-                response = create_fb_post_comment(PAGE, kwargs.get('ppk'), self.request.user.id,
-                                                  request.data['message'] or None,
-                                                  request.data['attachment_type'] or None,
-                                                  request.data['attachment'] or None
+                response = create_fb_post_comment(page.id, kwargs.get('ppk'), self.request.user.id,
+                                                  request.data.get('message') or None,
+                                                  request.data.get('attachment_type') or None,
+                                                  request.data.get('attachment') or None
                                                   )
 
                 if response:
@@ -232,7 +231,7 @@ class FBPostCommentDetail(generics.RetrieveDestroyAPIView):
         return FBPostComment.objects.filter(id=self.kwargs.get('cpk'), post=self.kwargs.get('ppk'))
 
     def get(self, request, *args, **kwargs):
-        page = FBPage.objects.get(id=self.kwargs.get('pk'))
+        page = FBPage.objects.get(id=self.kwargs.get('pk'), user=self.request.user.id)
 
         if page.user_id == self.request.user.id:
             response = fetch_fb_post_comment_data(kwargs.get('pk'), kwargs.get('cpk'),
@@ -291,3 +290,7 @@ class FBPostTagsList(generics.ListAPIView):
                 break
 
         return FBPostTag.objects.filter(id__in=tag_ids)
+
+    @method_decorator(caching)
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)

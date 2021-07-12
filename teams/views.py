@@ -183,6 +183,7 @@ class InviteViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
 
+        # TODO: Fix This
         # Member.objects.get(id=self.kwargs['pk']).delete()
 
         self.perform_destroy(instance)

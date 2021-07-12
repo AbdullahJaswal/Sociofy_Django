@@ -1,6 +1,8 @@
 from facebook_business.adobjects.igmedia import IGMedia
 from facebook_business.api import FacebookAdsApi
 
+from django.core.cache import cache
+
 
 def createIGComment(fb_obj_id, app_id, app_secret, access_token, message=None):
     FacebookAdsApi.init(
@@ -19,6 +21,7 @@ def createIGComment(fb_obj_id, app_id, app_secret, access_token, message=None):
 
             IGMedia(fb_obj_id).create_comment(params=params)
 
+            cache.clear()
             return True
         except:
             return False

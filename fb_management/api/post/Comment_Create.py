@@ -1,6 +1,8 @@
 from facebook_business.adobjects.post import Post
 from facebook_business.api import FacebookAdsApi
 
+from django.core.cache import cache
+
 
 def createFBComment(fb_obj_id, app_id, app_secret, access_token, message=None, attachment_type=None, attachment=None):
     FacebookAdsApi.init(
@@ -19,6 +21,8 @@ def createFBComment(fb_obj_id, app_id, app_secret, access_token, message=None, a
 
         try:
             Post(fb_obj_id).create_comment(params=params)
+
+            cache.clear()
             return True
         except:
             return False
@@ -30,6 +34,8 @@ def createFBComment(fb_obj_id, app_id, app_secret, access_token, message=None, a
 
         try:
             Post(fb_obj_id).create_comment(params=params)
+
+            cache.clear()
             return True
         except:
             return False

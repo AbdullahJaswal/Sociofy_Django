@@ -6,13 +6,12 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
 
 from .tasks import *
 
 from users.models import User
 
-from configs import permission
+from configs import permission, caching
 
 
 # user = 1  # Replace 'user' to self.request.user.id with FIND and REPLACE and remove this variable.
@@ -28,7 +27,7 @@ class IGPageList(generics.ListAPIView):
     def get_queryset(self):
         return IGPage.objects.filter(user=self.request.user.id)
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         try:
             userObj = User.objects.get(id=self.request.user.id)
@@ -50,7 +49,7 @@ class IGPageDetail(generics.RetrieveAPIView):
     serializer_class = IGPageSerializer
     lookup_url_kwarg = 'pk'
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         page = IGPage.objects.get(id=self.kwargs.get('pk'))
 
@@ -82,7 +81,7 @@ class IGPostList(generics.ListCreateAPIView):
             serializer_class = IGPostCreateSerializer
         return serializer_class
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         page = IGPage.objects.get(id=self.kwargs.get('pk'))
 
@@ -130,7 +129,7 @@ class IGPostDetail(generics.RetrieveDestroyAPIView):
     def get_queryset(self):
         return IGPost.objects.filter(id=self.kwargs.get('ppk'), page=self.kwargs.get('pk'))
 
-    # @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         page = IGPage.objects.get(id=self.kwargs.get('pk'))
 
@@ -160,7 +159,7 @@ class IGPostCommentList(generics.ListCreateAPIView):
             serializer_class = IGPostCommentCreateSerializer
         return serializer_class
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         page = IGPage.objects.get(id=self.kwargs.get('pk'))
 
@@ -176,16 +175,16 @@ class IGPostCommentList(generics.ListCreateAPIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
     def post(self, request, *args, **kwargs):
-        PAGE = 2  # kwargs.get('pk') HARD CODED Dummy Page for Create Post!
+        PAGE = 17841446538771918  # kwargs.get('pk') HARD CODED Dummy Page for Delete Post!
 
-        page = IGPage.objects.get(id=PAGE)
+        page = IGPage.objects.get(page_id=PAGE, user=self.request.user.id)
 
         if page.user_id == self.request.user.id:
             if request.data['text'] is None or request.data['text'] == '':
                 return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
             else:
-                response = create_ig_post_comment(PAGE, kwargs.get('ppk'), self.request.user.id,
-                                                  request.data['text'] or None
+                response = create_ig_post_comment(page.id, kwargs.get('ppk'), self.request.user.id,
+                                                  request.data.get('text') or None
                                                   )
 
                 if response:

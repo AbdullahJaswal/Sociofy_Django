@@ -7,7 +7,6 @@ from .serializers import *
 from .tasks import *
 
 from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
 
 from configs import *
 
@@ -24,7 +23,7 @@ class IGPageAnalyticList(generics.ListAPIView):
     def get_queryset(self):
         return IGPageAnalytic.objects.filter(page=self.kwargs.get('pk'))
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         try:
             page = IGPage.objects.select_related('sm_account').get(id=self.kwargs["pk"], user=self.request.user.id)
@@ -47,7 +46,7 @@ class IGPageDemographyAnalyticList(generics.ListAPIView):
     def get_queryset(self):
         return IGPageDemographyAnalytic.objects.filter(page=self.kwargs.get('pk'))
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         try:
             page = IGPage.objects.select_related('sm_account').get(id=self.kwargs["pk"], user=self.request.user.id)
@@ -73,7 +72,7 @@ class IGPageMetricsCorrelationList(generics.ListAPIView):
     def get_queryset(self):
         return IGPageMetricsCorrelation.objects.filter(page=self.kwargs.get('pk'))
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         try:
             page = IGPage.objects.select_related('sm_account').get(id=self.kwargs["pk"], user=self.request.user.id)
@@ -96,7 +95,7 @@ class IGPageDailyAnalyticsList(generics.ListAPIView):
     def get_queryset(self):
         return IGPageDailyAnalytics.objects.filter(page=self.kwargs.get('pk'))
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         try:
             page = IGPage.objects.select_related('sm_account').get(id=self.kwargs["pk"], user=self.request.user.id)
@@ -119,7 +118,7 @@ class IGPageDailyAnalyticsNOOUTLIERSList(generics.ListAPIView):
     def get_queryset(self):
         return IGPageDailyAnalyticsNOOUTLIERS.objects.filter(page=self.kwargs.get('pk'))
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         try:
             page = IGPage.objects.select_related('sm_account').get(id=self.kwargs["pk"], user=self.request.user.id)
@@ -142,7 +141,7 @@ class IGPageDailyImpressionsList(generics.ListAPIView):
     def get_queryset(self):
         return IGPageDailyImpressions.objects.filter(page=self.kwargs.get('pk'))
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         try:
             page = IGPage.objects.select_related('sm_account').get(id=self.kwargs["pk"], user=self.request.user.id)
@@ -165,7 +164,7 @@ class IGPageDailyReachList(generics.ListAPIView):
     def get_queryset(self):
         return IGPageDailyReach.objects.filter(page=self.kwargs.get('pk'))
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         try:
             page = IGPage.objects.select_related('sm_account').get(id=self.kwargs["pk"], user=self.request.user.id)
@@ -188,7 +187,7 @@ class IGPageDailyFollowerCountList(generics.ListAPIView):
     def get_queryset(self):
         return IGPageDailyFollowerCount.objects.filter(page=self.kwargs.get('pk'))
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         try:
             page = IGPage.objects.select_related('sm_account').get(id=self.kwargs["pk"], user=self.request.user.id)
@@ -211,7 +210,7 @@ class IGPageDailyEmailContactsList(generics.ListAPIView):
     def get_queryset(self):
         return IGPageDailyEmailContacts.objects.filter(page=self.kwargs.get('pk'))
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         try:
             page = IGPage.objects.select_related('sm_account').get(id=self.kwargs["pk"], user=self.request.user.id)
@@ -234,7 +233,7 @@ class IGPageDailyPhoneCallClicksList(generics.ListAPIView):
     def get_queryset(self):
         return IGPageDailyPhoneCallClicks.objects.filter(page=self.kwargs.get('pk'))
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         try:
             page = IGPage.objects.select_related('sm_account').get(id=self.kwargs["pk"], user=self.request.user.id)
@@ -257,7 +256,7 @@ class IGPageDailyTextMessageClicksList(generics.ListAPIView):
     def get_queryset(self):
         return IGPageDailyTextMessageClicks.objects.filter(page=self.kwargs.get('pk'))
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         try:
             page = IGPage.objects.select_related('sm_account').get(id=self.kwargs["pk"], user=self.request.user.id)
@@ -280,7 +279,7 @@ class IGPageDailyDirectionsClicksList(generics.ListAPIView):
     def get_queryset(self):
         return IGPageDailyDirectionsClicks.objects.filter(page=self.kwargs.get('pk'))
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         try:
             page = IGPage.objects.select_related('sm_account').get(id=self.kwargs["pk"], user=self.request.user.id)
@@ -303,7 +302,7 @@ class IGPageDailyWebsiteClicksList(generics.ListAPIView):
     def get_queryset(self):
         return IGPageDailyWebsiteClicks.objects.filter(page=self.kwargs.get('pk'))
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         try:
             page = IGPage.objects.select_related('sm_account').get(id=self.kwargs["pk"], user=self.request.user.id)
@@ -326,7 +325,7 @@ class IGPageDailyProfileViewsList(generics.ListAPIView):
     def get_queryset(self):
         return IGPageDailyProfileViews.objects.filter(page=self.kwargs.get('pk'))
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         try:
             page = IGPage.objects.select_related('sm_account').get(id=self.kwargs["pk"], user=self.request.user.id)
@@ -350,7 +349,7 @@ class IGPostAnalyticList(generics.ListAPIView):
     def get_queryset(self):
         return IGPostAnalytic.objects.filter(post=self.kwargs.get('ppk'))
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         try:
             page = IGPage.objects.select_related('sm_account').get(id=self.kwargs["pk"], user=self.request.user.id)
@@ -373,7 +372,7 @@ class IGPostRatingList(generics.ListAPIView):
     def get_queryset(self):
         return IGPostRating.objects.filter(page=self.kwargs.get('pk'))
 
-    @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         try:
             page = IGPage.objects.select_related('sm_account').get(id=self.kwargs["pk"], user=self.request.user.id)
@@ -396,7 +395,7 @@ class IGBestPostTimeList(generics.ListAPIView):
     def get_queryset(self):
         return IGBestPostTime.objects.filter(page=self.kwargs.get('pk'))
 
-    # @method_decorator(cache_page(60 * 5))  # Cached for 5 minutes.
+    @method_decorator(caching)
     def get(self, request, *args, **kwargs):
         try:
             page = IGPage.objects.select_related('sm_account').get(id=self.kwargs["pk"], user=self.request.user.id)

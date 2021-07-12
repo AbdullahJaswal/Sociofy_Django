@@ -538,7 +538,7 @@ def delete_fb_post(local_page_id, user_id, local_post_id):
 
 def create_fb_post_comment(local_page_id, local_post_id, user_id, message=None, attachment_type=None, attachment=None):
     try:
-        post = FBPost.objects.get(id=local_post_id)
+        post = FBPost.objects.get(id=local_post_id, page=local_page_id)
 
         if post:
             page = FBPage.objects.select_related('sm_account').get(id=local_page_id, user=user_id)
