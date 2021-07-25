@@ -46,6 +46,8 @@ class IGPost(models.Model):
     can_comment = models.BooleanField(default=None, null=True, blank=True)
     comment_count = models.BigIntegerField(default=None, null=True, blank=True)
 
+    rating = models.DecimalField(max_digits=2, decimal_places=1, default=None, null=True, blank=True)
+
     objects = models.Manager()
 
     class Meta:
@@ -68,6 +70,7 @@ class IGPostComment(models.Model):
     replies_count = models.BigIntegerField(default=None, null=True, blank=True)
     replies = models.JSONField(default=None, null=True, blank=True)
     comment_post_id = models.BigIntegerField(default=None, null=True, blank=True)
+    sentiment = models.CharField(max_length=32, default=None, null=True, blank=True)
 
     objects = models.Manager()
 

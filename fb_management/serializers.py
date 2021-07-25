@@ -14,10 +14,16 @@ class FBPostSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class FBScheduledPostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FBScheduledPost
+        fields = '__all__'
+
+
 class FBPostCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = FBPost
-        fields = ['message', 'link', 'media']
+        fields = ['message', 'link', 'media', 'created_time']
 
 
 class FBPostCommentSerializer(serializers.ModelSerializer):

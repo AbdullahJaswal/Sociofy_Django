@@ -4,11 +4,13 @@ from .models import *
 from sm_accounts.models import *
 from fb_management.api.get.Page_Data import *
 from fb_management.api.get.Post_Data import *
+from fb_management.api.get.Scheduled_Posts import *
 from fb_management.api.get.Comment_Data import *
 from fb_management.api.post.Post_Create import *
 from fb_management.api.post.Comment_Create import *
 from fb_management.api.delete.Post_Delete import *
 from fb_management.api.delete.Comment_Delete import *
+from fb_management.api.Sentiment_Analysis import *
 from .jobs.post import *
 from .sync.FBPostTags_Sync import *
 from django.utils import timezone
@@ -365,6 +367,59 @@ def fetch_fb_post_data(local_page_id, user_id, local_post_id):
         return False
 
 
+def fetch_fb_scheduled_posts_data(local_page_id, user_id):
+    try:
+        page = FBPage.objects.select_related('sm_account').filter(id=local_page_id, user=user_id)
+
+        if page.exists():
+            # Using 'get' makes it faster.
+            page = FBPage.objects.select_related('sm_account').get(id=local_page_id, user=user_id)
+
+            fb_app = FacebookApp.objects.get(id=fb_app_number)
+
+            # Page ID is sent to get all posts data.
+            data = getFBScheduledPostsData(page.page_id, fb_app.app_id, fb_app.app_secret, page.sm_account.access_token)
+
+            posts = []
+            if data:
+                for obj in data:
+                    posts.append(
+                        FBScheduledPost(
+                            page=page,
+                            post_id=obj.get('id') or None,
+                            pageName=page.name,
+                            scheduled_time=obj.get('created_time') or None,
+                            modified_on=timezone.now(),
+                            message=obj.get('message') or None
+                        )
+                    )
+
+                if posts:
+                    bulk_sync(
+                        new_models=posts,
+                        filters=Q(page=page.id),  # Field(s) which is same in all records.
+                        fields=[
+                            'pageName',
+                            'scheduled_time',
+                            'modified_on',
+                            'message'
+                        ],
+                        key_fields=('post_id',),
+                        # Field(s) which is different in all records but always same for itself.
+                        exclude_fields=('id', 'page', 'post_id',),
+                        skip_deletes=False,
+                        batch_size=50
+                    )
+
+                return True
+            else:
+                return False
+        else:
+            return False
+    except:
+        return False
+
+
 def fetch_fb_post_comments_data(local_page_id, local_post_id, user_id):
     try:
         post = FBPost.objects.get(id=local_post_id)
@@ -378,6 +433,19 @@ def fetch_fb_post_comments_data(local_page_id, local_post_id, user_id):
 
             comments = []
             if obj:
+                tasks = []
+                for comment in obj:
+                    if comment.get('comment') is not None and comment.get('comment') != "":
+                        tasks.append(
+                            getSentiment.s(comment.get("id"), comment.get("message"))
+                        )
+
+                task_group = group(*tasks)
+                result_group = task_group.apply_async()
+                tasksData = result_group.join()
+
+                obj = getFBCommentData(post.post_id, fb_app.app_id, fb_app.app_secret, page[0].sm_account.access_token)
+
                 for comment in obj:
                     replies_count = 0
                     replies = None
@@ -387,22 +455,31 @@ def fetch_fb_post_comments_data(local_page_id, local_post_id, user_id):
 
                         replies_count += len(comment)
 
-                    comments.append(FBPostComment(
-                        post=post,
-                        comment_id=comment.get('id') or None,
-                        created_time=comment.get('created_time') or None,
-                        modified_on=timezone.now(),
-                        fb_user_id=comment['from']['id'] if 'from' in comment else None,
-                        fb_user_name=comment['from']['name'] if 'from' in comment else None,
-                        can_comment=comment.get('can_comment'),
-                        attachment_type=comment['attachment']['type'] if 'attachment' in comment else None,
-                        attachment=comment['attachment']['media']['image']['src'] if 'attachment' in comment else None,
-                        message=comment.get('message') or None,
-                        reactions_count=comment['reactions']['summary'].get('total_count') or None,
-                        reactions=comment['reactions'].get('data') or None,
-                        replies_count=replies_count,
-                        replies=replies,
-                    ))
+                    sentiment = None
+                    for comSent in tasksData:
+                        if comSent.get("id") == comment.get("id"):
+                            sentiment = comSent.get("sentiment") or None
+
+                    comments.append(
+                        FBPostComment(
+                            post=post,
+                            comment_id=comment.get('id') or None,
+                            created_time=comment.get('created_time') or None,
+                            modified_on=timezone.now(),
+                            fb_user_id=comment['from']['id'] if 'from' in comment else None,
+                            fb_user_name=comment['from']['name'] if 'from' in comment else None,
+                            can_comment=comment.get('can_comment'),
+                            attachment_type=comment['attachment']['type'] if 'attachment' in comment else None,
+                            attachment=comment['attachment']['media']['image'][
+                                'src'] if 'attachment' in comment else None,
+                            message=comment.get('message') or None,
+                            reactions_count=comment['reactions']['summary'].get('total_count') or None,
+                            reactions=comment['reactions'].get('data') or None,
+                            replies_count=replies_count,
+                            replies=replies,
+                            sentiment=sentiment or None
+                        )
+                    )
 
             if comments:
                 bulk_sync(
@@ -417,7 +494,8 @@ def fetch_fb_post_comments_data(local_page_id, local_post_id, user_id):
                         'reactions_count',
                         'reactions',
                         'replies_count',
-                        'replies'
+                        'replies',
+                        'sentiment'
                     ],
                     key_fields=('comment_id',),
                     # Field(s) which is different in all records but always same for itself.
@@ -501,8 +579,8 @@ def fetch_fb_post_comment_data(local_page_id, local_comment_id, user_id, local_p
         return False
 
 
-def create_fb_post(local_page_id, user_id, message=None, link=None, pictures=None, video=None):
-    # try:
+def create_fb_post(local_page_id, user_id, message=None, link=None, pictures=None, video=None, schedule=None):
+    try:
         page = FBPage.objects.select_related('sm_account').get(id=local_page_id, user=user_id)
 
         if page:
@@ -510,12 +588,12 @@ def create_fb_post(local_page_id, user_id, message=None, link=None, pictures=Non
 
             return createFBPost(
                 page.page_id, fb_app.app_id, fb_app.app_secret, page.sm_account.access_token,
-                message=message, link=link, pictures=pictures, video=video
+                message=message, link=link, pictures=pictures, video=video, schedule=schedule
             )
-    #     else:
-    #         return False
-    # except:
-    #     return False
+        else:
+            return False
+    except:
+        return False
 
 
 def delete_fb_post(local_page_id, user_id, local_post_id):

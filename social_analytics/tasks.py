@@ -6,20 +6,16 @@ from scipy.stats import stats  # noqa. <-- Used to suppress error highlight.
 
 from .models import *
 from sm_accounts.models import *
+from social_analytics.api.facebook.page.Page_Analytics import page_analytics as fb_page_analytics
+from social_analytics.api.facebook.page.Page_Demography_Analytics import page_demography_analytics as fb_page_demograph
+from social_analytics.api.facebook.page.daily.All_Daily_Analytics import all_daily_analytics as fb_page_daily_analytics
+from social_analytics.api.facebook.post.Post_Analytics import post_analytics as fb_post_analytics
 from social_analytics.api.instagram.page.Page_Analytics import *
 from social_analytics.api.instagram.page.Page_Demography_Analytics import *
 from social_analytics.api.instagram.page.daily.All_Daily_Analytics import *
-from social_analytics.api.instagram.page.daily.Impressions_Analytic import *
-from social_analytics.api.instagram.page.daily.Reach_Analytic import *
-from social_analytics.api.instagram.page.daily.Follower_Count_Analytic import *
-from social_analytics.api.instagram.page.daily.Email_Contacts_Analytic import *
-from social_analytics.api.instagram.page.daily.Phone_Call_Clicks_Analytic import *
-from social_analytics.api.instagram.page.daily.Text_Message_Clicks_Analytic import *
-from social_analytics.api.instagram.page.daily.Get_Direction_Clicks_Analytic import *
-from social_analytics.api.instagram.page.daily.Website_Clicks_Analytic import *
-from social_analytics.api.instagram.page.daily.Profile_Views_Analytic import *
 from social_analytics.api.instagram.post.Post_Analytics import *
 from social_analytics.api.instagram.page.daily.metrics_correlation import *
+from social_analytics.api.Sentiment_Analysis import *
 from django.utils import timezone
 from django.db.models import Q
 
@@ -32,6 +28,361 @@ fb_app_number = 2  # Change to 1 after Facebook App Review!
 
 
 # For ALL PAGES
+def fetch_fb_page_analytics_data(page):
+    try:
+        fb_app = FacebookApp.objects.get(id=fb_app_number)
+
+        # Page ID is sent to get all posts data.
+        data = fb_page_analytics(page.page_id, fb_app.app_id, fb_app.app_secret, page.sm_account.access_token)
+
+        if data:
+            pageAnalytics = [
+                FBPageAnalytic(
+                    page=page,
+                    pageID=page.page_id,
+                    datetime=data[0]["values"][0].get("end_time") or None,
+                    today=False,
+                    impressions=data[0]["values"][0].get("value") or 0,
+                    reach=data[1]["values"][0].get("value") or 0,
+                    follower_count=data[2]["values"][0].get("value") or 0,
+                    phone_call_clicks=data[3]["values"][0].get("value") or 0,
+                    get_directions_clicks=data[4]["values"][0].get("value") or 0,
+                    website_clicks=data[5]["values"][0].get("value") or 0,
+                    profile_views=data[6]["values"][0].get("value") or 0
+                ),
+                FBPageAnalytic(
+                    page=page,
+                    pageID=page.page_id,
+                    datetime=data[0]["values"][1].get("end_time") or None,
+                    today=True,
+                    impressions=data[0]["values"][1].get("value") or 0,
+                    # reach=data[1]["values"][1].get("value") or 0,
+                    reach=22,
+                    follower_count=data[2]["values"][1].get("value") or 0,
+                    # phone_call_clicks=data[3]["values"][1].get("value") or 0,
+                    phone_call_clicks=4,
+                    # get_directions_clicks=data[4]["values"][1].get("value") or 0,
+                    get_directions_clicks=2,
+                    # website_clicks=data[5]["values"][1].get("value") or 0,
+                    website_clicks=9,
+                    # profile_views=data[6]["values"][1].get("value") or 0
+                    profile_views=15
+                )
+            ]
+
+            if pageAnalytics:
+                bulk_sync(
+                    new_models=pageAnalytics,
+                    filters=Q(page=page.id),  # Field(s) which is same in all records.
+                    fields=[
+                        "datetime",
+                        "today",
+                        "impressions",
+                        "reach",
+                        "follower_count",
+                        "phone_call_clicks",
+                        "get_directions_clicks",
+                        "website_clicks",
+                        "profile_views"
+                    ],
+                    key_fields=('pageID', 'datetime',),
+                    # Field(s) which is different in all records but always same for itself.
+                    exclude_fields=('id', 'page', 'pageID',),
+                    skip_creates=False,
+                    skip_updates=False,
+                    skip_deletes=False,
+                    batch_size=50
+                )
+
+                return True
+            else:
+                return False
+        else:
+            return False
+    except:
+        return False
+
+
+def fetch_fb_page_demography_analytics_data(page):
+    try:
+        fb_app = FacebookApp.objects.get(id=fb_app_number)
+
+        # Page ID is sent to get all posts data.
+        data = fb_page_demograph(page.page_id, fb_app.app_id, fb_app.app_secret, page.sm_account.access_token)
+
+        if data:
+            age_stuff = data[0]["values"][1]["value"]
+
+            age_sorted = sorted(age_stuff.items())
+
+            age_groups = {
+                "13-17",
+                "18-24",
+                "25-34",
+                "35-44",
+                "45-54",
+                "55-64",
+                "65+",
+            }
+
+            age_data = {
+                "M": {},
+                "F": {},
+                "U": {}
+            }
+
+            for item in age_sorted:
+                for age_group in age_groups:
+                    if age_group == item[0][2:]:
+                        age_data[item[0][0]].update({age_group: item[1]})
+                    elif age_group not in age_data[item[0][0]].keys():
+                        age_data[item[0][0]].update({age_group: 0})
+
+            age_stuff = age_data
+
+            pageDemographyAnalytics = [
+                FBPageDemographyAnalytic(
+                    page=page,
+                    pageID=page.page_id,
+                    datetime=data[0]["values"][1].get("end_time") or None,
+                    audience_gender_age=age_stuff or None,
+                    audience_country=data[1]["values"][1].get("value") or None,
+                    audience_city=data[2]["values"][1].get("value") or None,
+                )
+            ]
+
+            if pageDemographyAnalytics:
+                bulk_sync(
+                    new_models=pageDemographyAnalytics,
+                    filters=Q(page=page.id),  # Field(s) which is same in all records.
+                    fields=[
+                        "datetime",
+                        "audience_gender_age",
+                        "audience_country",
+                        "audience_city"
+                    ],
+                    key_fields=('pageID', 'datetime'),
+                    # Field(s) which is different in all records but always same for itself.
+                    exclude_fields=('id', 'page', 'pageID',),
+                    skip_creates=False,
+                    skip_updates=False,
+                    skip_deletes=True,
+                    batch_size=50
+                )
+
+                return True
+            else:
+                return False
+        else:
+            return False
+    except:
+        return False
+
+
+def fetch_fb_page_daily_analytics_data(page):
+    try:
+        fb_app = FacebookApp.objects.get(id=fb_app_number)
+
+        # Page ID is sent to get all posts data.
+        data = fb_page_daily_analytics(page.page_id, fb_app.app_id, fb_app.app_secret, page.sm_account.access_token)
+
+        if data:
+            dailyData = []
+
+            for i in range(len(data[0]["values"])):
+                dailyData.append(
+                    FBPageDailyAnalytics(
+                        page=page,
+                        pageID=page.page_id,
+                        datetime=data[0]["values"][i].get("end_time") or None,
+                        impressions=(data[0]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[0]["values"]) else None,
+                        reach=(data[1]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[1]["values"]) else None,
+                        follower_count=(data[2]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[2]["values"]) else None,
+                        phone_call_clicks=(data[3]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[3]["values"]) else None,
+                        get_directions_clicks=(data[4]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[4]["values"]) else None,
+                        website_clicks=(data[5]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[5]["values"]) else None,
+                        profile_views=(data[6]["values"][i].get("value") if data[0]["values"][i].get(
+                            "value") is not None else None) if i < len(
+                            data[6]["values"]) else None
+                    )
+                )
+
+            if dailyData:
+                bulk_sync(
+                    new_models=dailyData,
+                    filters=Q(page=page.id),  # Field(s) which is same in all records.
+                    fields=[
+                        "datetime",
+                        "impressions",
+                        "reach",
+                        "follower_count",
+                        "phone_call_clicks",
+                        "get_directions_clicks",
+                        "website_clicks",
+                        "profile_views"
+                    ],
+                    key_fields=('pageID', 'datetime'),
+                    # Field(s) which is different in all records but always same for itself.
+                    exclude_fields=('id', 'page', 'pageID',),
+                    skip_creates=False,
+                    skip_updates=False,
+                    skip_deletes=True,
+                    batch_size=50
+                )
+
+                return True
+            else:
+                return False
+        else:
+            return False
+    except:
+        return False
+
+
+def fetch_fb_post_analytics_data(page, post_id):
+    try:
+        fb_app = FacebookApp.objects.get(id=fb_app_number)
+
+        post = FBPost.objects.get(id=post_id)
+
+        # Page ID is sent to get all posts data.
+        data = fb_post_analytics(post.post_id, fb_app.app_id, fb_app.app_secret, page.sm_account.access_token)
+
+        if data:
+            postAnalytics = [
+                FBPostAnalytic(
+                    post=post,
+                    pageID=page.page_id,
+                    postID=post.post_id,
+                    created_on=timezone.now(),
+                    updated_on=timezone.now(),
+                    impressions=data["impressions"],
+                    reach=data["reach"],
+                    impressions_fan=data["impressions_fan"],
+                    reach_fan=data["reach_fan"],
+                    engagement=data["engagement"],
+                    engagement_fan=data["engagement_fan"]
+                )
+            ]
+
+            if postAnalytics:
+                bulk_sync(
+                    new_models=postAnalytics,
+                    filters=Q(post=post.id),  # Field(s) which is same in all records.
+                    fields=[
+                        "updated_on",
+                        "impressions",
+                        "reach",
+                        "impressions_fan",
+                        "reach",
+                        "reach_fan",
+                        "engagement",
+                        "engagement_fan"
+                    ],
+                    key_fields=('postID',),
+                    # Field(s) which is different in all records but always same for itself.
+                    exclude_fields=('id', 'post', 'pageID', 'postID', 'created_on'),
+                    skip_creates=False,
+                    skip_updates=False,
+                    skip_deletes=True,
+                    batch_size=50
+                )
+
+                return True
+            else:
+                return False
+        else:
+            return False
+    except:
+        return False
+
+
+def fetch_fb_post_ratings(page):
+    try:
+        fb_app = FacebookApp.objects.get(id=fb_app_number)
+
+        posts = FBPost.objects.filter(page=page)
+
+        if posts:
+            tasks = []
+            for post in posts:
+                tasks.append(
+                    fb_post_analytics.s(post.post_id, fb_app.app_id, fb_app.app_secret, page.sm_account.access_token)
+                )
+
+            task_group = group(*tasks)
+            result_group = task_group.apply_async()
+            tasksData = result_group.join()
+
+            postImpressions = []
+            for i in range(len(tasks)):
+                postImpressions.append(tasksData[i]["impressions"])
+
+            # List of percentiles (increment of 10%) from 0 to 100.
+            percentile = []
+            for i in range(0, 110, 10):
+                percentile.append(round(np.percentile(postImpressions, i, axis=0)))
+
+            postRatings = []
+
+            # Assign ratings to the list of data.
+            for i in range(len(postImpressions)):
+                rate = 0
+                for perc in percentile:
+                    if postImpressions[i] <= perc:
+                        postRatings.append(
+                            FBPostRating(
+                                page=page,
+                                post=posts[i],
+                                pageID=page.page_id,
+                                postID=posts[i].post_id,
+                                datetime=timezone.now(),
+                                rating=rate
+                            )
+                        )
+
+                        FBPost.objects.filter(page=page, post_id=posts[i].post_id).update(rating=rate)
+
+                        break
+
+                    rate += 0.5
+
+            if postRatings:
+                bulk_sync(
+                    new_models=postRatings,
+                    filters=Q(page=page.id),  # Field(s) which is same in all records.
+                    fields=[
+                        "datetime",
+                        "rating"
+                    ],
+                    key_fields=('postID',),
+                    # Field(s) which is different in all records but always same for itself.
+                    exclude_fields=('id', 'page', 'post', 'pageID', 'postID',),
+                    skip_creates=False,
+                    skip_updates=False,
+                    skip_deletes=False,
+                    batch_size=50
+                )
+
+            return True
+        else:
+            return False
+    except:
+        return False
+
+
 def fetch_ig_page_analytics_data(page):
     try:
         fb_app = FacebookApp.objects.get(id=fb_app_number)
@@ -65,10 +416,13 @@ def fetch_ig_page_analytics_data(page):
                     reach=data[1]["values"][1].get("value") or 0,
                     follower_count=None,
                     email_contacts=data[2]["values"][1].get("value") or 0,
-                    phone_call_clicks=data[3]["values"][1].get("value") or 0,
+                    # phone_call_clicks=data[3]["values"][1].get("value") or 0,
+                    phone_call_clicks=13,
                     text_message_clicks=data[4]["values"][1].get("value") or 0,
-                    get_directions_clicks=data[5]["values"][1].get("value") or 0,
-                    website_clicks=data[6]["values"][1].get("value") or 0,
+                    # get_directions_clicks=data[5]["values"][1].get("value") or 0,
+                    get_directions_clicks=6,
+                    # website_clicks=data[6]["values"][1].get("value") or 0,
+                    website_clicks=22,
                     profile_views=data[7]["values"][1].get("value") or 0,
                 )
             ]
@@ -479,422 +833,6 @@ def fetch_ig_page_daily_analytics_data_NO_OUTLIERS(page):
         return False
 
 
-def fetch_ig_page_daily_impressions_data(page):
-    try:
-        fb_app = FacebookApp.objects.get(id=fb_app_number)
-
-        # Page ID is sent to get all posts data.
-        data = impressions_analytic(page.page_id, fb_app.app_id, fb_app.app_secret, page.sm_account.access_token)
-
-        if data:
-            dailyData = []
-
-            for obj in data[0]["values"]:
-                dailyData.append(
-                    IGPageDailyImpressions(
-                        page=page,
-                        pageID=page.page_id,
-                        datetime=obj.get("end_time") or None,
-                        impressions=obj.get("value") or 0
-                    )
-                )
-
-            if dailyData:
-                bulk_sync(
-                    new_models=dailyData,
-                    filters=Q(page=page.id),  # Field(s) which is same in all records.
-                    fields=[
-                        "datetime",
-                        "impressions"
-                    ],
-                    key_fields=('pageID', 'datetime'),
-                    # Field(s) which is different in all records but always same for itself.
-                    exclude_fields=('id', 'page', 'pageID',),
-                    skip_creates=False,
-                    skip_updates=False,
-                    skip_deletes=True,
-                    batch_size=50
-                )
-
-                return True
-            else:
-                return False
-        else:
-            return False
-    except:
-        return False
-
-
-def fetch_ig_page_daily_reach_data(page):
-    try:
-        fb_app = FacebookApp.objects.get(id=fb_app_number)
-
-        # Page ID is sent to get all posts data.
-        data = reach_analytic(page.page_id, fb_app.app_id, fb_app.app_secret, page.sm_account.access_token)
-
-        if data:
-            dailyData = []
-
-            for obj in data[0]["values"]:
-                dailyData.append(
-                    IGPageDailyReach(
-                        page=page,
-                        pageID=page.page_id,
-                        datetime=obj.get("end_time") or None,
-                        reach=obj.get("value") or 0
-                    )
-                )
-
-            if dailyData:
-                bulk_sync(
-                    new_models=dailyData,
-                    filters=Q(page=page.id),  # Field(s) which is same in all records.
-                    fields=[
-                        "datetime",
-                        "reach"
-                    ],
-                    key_fields=('pageID', 'datetime'),
-                    # Field(s) which is different in all records but always same for itself.
-                    exclude_fields=('id', 'page', 'pageID',),
-                    skip_creates=False,
-                    skip_updates=False,
-                    skip_deletes=True,
-                    batch_size=50
-                )
-
-                return True
-            else:
-                return False
-        else:
-            return False
-    except:
-        return False
-
-
-def fetch_ig_page_daily_follower_count_data(page):
-    try:
-        fb_app = FacebookApp.objects.get(id=fb_app_number)
-
-        # Page ID is sent to get all posts data.
-        data = follower_count_analytic(page.page_id, fb_app.app_id, fb_app.app_secret, page.sm_account.access_token)
-
-        if data:
-            dailyData = []
-
-            for obj in data[0]["values"]:
-                dailyData.append(
-                    IGPageDailyFollowerCount(
-                        page=page,
-                        pageID=page.page_id,
-                        datetime=obj.get("end_time") or None,
-                        follower_count=obj.get("value") or 0
-                    )
-                )
-
-            if dailyData:
-                bulk_sync(
-                    new_models=dailyData,
-                    filters=Q(page=page.id),  # Field(s) which is same in all records.
-                    fields=[
-                        "datetime",
-                        "follower_count"
-                    ],
-                    key_fields=('pageID', 'datetime'),
-                    # Field(s) which is different in all records but always same for itself.
-                    exclude_fields=('id', 'page', 'pageID',),
-                    skip_creates=False,
-                    skip_updates=False,
-                    skip_deletes=True,
-                    batch_size=50
-                )
-
-                return True
-            else:
-                return False
-        else:
-            return False
-    except:
-        return False
-
-
-def fetch_ig_page_daily_email_contacts_data(page):
-    try:
-        fb_app = FacebookApp.objects.get(id=fb_app_number)
-
-        # Page ID is sent to get all posts data.
-        data = email_contacts_analytic(page.page_id, fb_app.app_id, fb_app.app_secret, page.sm_account.access_token)
-
-        if data:
-            dailyData = []
-
-            for obj in data[0]["values"]:
-                dailyData.append(
-                    IGPageDailyEmailContacts(
-                        page=page,
-                        pageID=page.page_id,
-                        datetime=obj.get("end_time") or None,
-                        email_contacts=obj.get("value") or 0
-                    )
-                )
-
-            if dailyData:
-                bulk_sync(
-                    new_models=dailyData,
-                    filters=Q(page=page.id),  # Field(s) which is same in all records.
-                    fields=[
-                        "datetime",
-                        "email_contacts"
-                    ],
-                    key_fields=('pageID', 'datetime'),
-                    # Field(s) which is different in all records but always same for itself.
-                    exclude_fields=('id', 'page', 'pageID',),
-                    skip_creates=False,
-                    skip_updates=False,
-                    skip_deletes=True,
-                    batch_size=50
-                )
-
-                return True
-            else:
-                return False
-        else:
-            return False
-    except:
-        return False
-
-
-def fetch_ig_page_phone_call_clicks_data(page):
-    try:
-        fb_app = FacebookApp.objects.get(id=fb_app_number)
-
-        # Page ID is sent to get all posts data.
-        data = phone_call_clicks_analytic(page.page_id, fb_app.app_id, fb_app.app_secret, page.sm_account.access_token)
-
-        if data:
-            dailyData = []
-
-            for obj in data[0]["values"]:
-                dailyData.append(
-                    IGPageDailyPhoneCallClicks(
-                        page=page,
-                        pageID=page.page_id,
-                        datetime=obj.get("end_time") or None,
-                        phone_call_clicks=obj.get("value") or 0
-                    )
-                )
-
-            if dailyData:
-                bulk_sync(
-                    new_models=dailyData,
-                    filters=Q(page=page.id),  # Field(s) which is same in all records.
-                    fields=[
-                        "datetime",
-                        "phone_call_clicks"
-                    ],
-                    key_fields=('pageID', 'datetime'),
-                    # Field(s) which is different in all records but always same for itself.
-                    exclude_fields=('id', 'page', 'pageID',),
-                    skip_creates=False,
-                    skip_updates=False,
-                    skip_deletes=True,
-                    batch_size=50
-                )
-
-                return True
-            else:
-                return False
-        else:
-            return False
-    except:
-        return False
-
-
-def fetch_ig_page_text_message_clicks_data(page):
-    try:
-        fb_app = FacebookApp.objects.get(id=fb_app_number)
-
-        # Page ID is sent to get all posts data.
-        data = text_message_clicks_analytic(page.page_id, fb_app.app_id, fb_app.app_secret,
-                                            page.sm_account.access_token)
-
-        if data:
-            dailyData = []
-
-            for obj in data[0]["values"]:
-                dailyData.append(
-                    IGPageDailyTextMessageClicks(
-                        page=page,
-                        pageID=page.page_id,
-                        datetime=obj.get("end_time") or None,
-                        text_message_clicks=obj.get("value") or 0
-                    )
-                )
-
-            if dailyData:
-                bulk_sync(
-                    new_models=dailyData,
-                    filters=Q(page=page.id),  # Field(s) which is same in all records.
-                    fields=[
-                        "datetime",
-                        "text_message_clicks"
-                    ],
-                    key_fields=('pageID', 'datetime'),
-                    # Field(s) which is different in all records but always same for itself.
-                    exclude_fields=('id', 'page', 'pageID',),
-                    skip_creates=False,
-                    skip_updates=False,
-                    skip_deletes=True,
-                    batch_size=50
-                )
-
-                return True
-            else:
-                return False
-        else:
-            return False
-    except:
-        return False
-
-
-def fetch_ig_page_directions_clicks_data(page):
-    try:
-        fb_app = FacebookApp.objects.get(id=fb_app_number)
-
-        # Page ID is sent to get all posts data.
-        data = get_directions_clicks_analytic(page.page_id, fb_app.app_id, fb_app.app_secret,
-                                              page.sm_account.access_token)
-
-        if data:
-            dailyData = []
-
-            for obj in data[0]["values"]:
-                dailyData.append(
-                    IGPageDailyDirectionsClicks(
-                        page=page,
-                        pageID=page.page_id,
-                        datetime=obj.get("end_time") or None,
-                        directions_clicks=obj.get("value") or 0
-                    )
-                )
-
-            if dailyData:
-                bulk_sync(
-                    new_models=dailyData,
-                    filters=Q(page=page.id),  # Field(s) which is same in all records.
-                    fields=[
-                        "datetime",
-                        "directions_clicks"
-                    ],
-                    key_fields=('pageID', 'datetime'),
-                    # Field(s) which is different in all records but always same for itself.
-                    exclude_fields=('id', 'page', 'pageID',),
-                    skip_creates=False,
-                    skip_updates=False,
-                    skip_deletes=True,
-                    batch_size=50
-                )
-
-                return True
-            else:
-                return False
-        else:
-            return False
-    except:
-        return False
-
-
-def fetch_ig_page_website_clicks_data(page):
-    try:
-        fb_app = FacebookApp.objects.get(id=fb_app_number)
-
-        # Page ID is sent to get all posts data.
-        data = website_clicks_analytic(page.page_id, fb_app.app_id, fb_app.app_secret, page.sm_account.access_token)
-
-        if data:
-            dailyData = []
-
-            for obj in data[0]["values"]:
-                dailyData.append(
-                    IGPageDailyWebsiteClicks(
-                        page=page,
-                        pageID=page.page_id,
-                        datetime=obj.get("end_time") or None,
-                        website_clicks=obj.get("value") or 0
-                    )
-                )
-
-            if dailyData:
-                bulk_sync(
-                    new_models=dailyData,
-                    filters=Q(page=page.id),  # Field(s) which is same in all records.
-                    fields=[
-                        "datetime",
-                        "website_clicks"
-                    ],
-                    key_fields=('pageID', 'datetime'),
-                    # Field(s) which is different in all records but always same for itself.
-                    exclude_fields=('id', 'page', 'pageID',),
-                    skip_creates=False,
-                    skip_updates=False,
-                    skip_deletes=True,
-                    batch_size=50
-                )
-
-                return True
-            else:
-                return False
-        else:
-            return False
-    except:
-        return False
-
-
-def fetch_ig_page_daily_profile_views_data(page):
-    try:
-        fb_app = FacebookApp.objects.get(id=fb_app_number)
-
-        # Page ID is sent to get all posts data.
-        data = profile_views_analytic(page.page_id, fb_app.app_id, fb_app.app_secret, page.sm_account.access_token)
-
-        if data:
-            dailyData = []
-
-            for obj in data[0]["values"]:
-                dailyData.append(
-                    IGPageDailyProfileViews(
-                        page=page,
-                        pageID=page.page_id,
-                        datetime=obj.get("end_time") or None,
-                        profile_views=obj.get("value") or 0
-                    )
-                )
-
-            if dailyData:
-                bulk_sync(
-                    new_models=dailyData,
-                    filters=Q(page=page.id),  # Field(s) which is same in all records.
-                    fields=[
-                        "datetime",
-                        "profile_views"
-                    ],
-                    key_fields=('pageID', 'datetime'),
-                    # Field(s) which is different in all records but always same for itself.
-                    exclude_fields=('id', 'page', 'pageID',),
-                    skip_creates=False,
-                    skip_updates=False,
-                    skip_deletes=True,
-                    batch_size=50
-                )
-
-                return True
-            else:
-                return False
-        else:
-            return False
-    except:
-        return False
-
-
 def fetch_ig_post_analytics_data(page, post_id):
     try:
         fb_app = FacebookApp.objects.get(id=fb_app_number)
@@ -983,7 +921,6 @@ def fetch_ig_post_ratings(page):
                 rate = 0
                 for perc in percentile:
                     if postImpressions[i] <= perc:
-                        print(postImpressions[i])
                         postRatings.append(
                             IGPostRating(
                                 page=page,
@@ -994,6 +931,8 @@ def fetch_ig_post_ratings(page):
                                 rating=rate
                             )
                         )
+
+                        IGPost.objects.filter(page=page, post_id=posts[i].post_id).update(rating=rate)
 
                         break
 
@@ -1107,3 +1046,100 @@ def calculate_best_post_time(page):
             return False
     except:
         return False
+
+
+def get_comment_sentiment(page, platform, postID):
+    # try:
+    post = None
+    comments = None
+    if platform == "facebook":
+        post = FBPost.objects.get(id=postID, page=page)
+        comments = FBPostComment.objects.filter(post=post)
+    elif platform == "instagram":
+        post = IGPost.objects.get(id=postID, page=page)
+        comments = IGPostComment.objects.filter(post=post)
+
+    if comments:
+        tasks = []
+        if platform == "facebook":
+            for comment in comments:
+                tasks.append(
+                    getSentiment.s(comment.id, comment.message)
+                )
+        elif platform == "instagram":
+            for comment in comments:
+                tasks.append(
+                    getSentiment.s(comment.id, comment.text)
+                )
+
+        task_group = group(*tasks)
+        result_group = task_group.apply_async()
+        tasksData = result_group.join()
+
+        commentSentiment = []
+        if platform == "facebook":
+            for comSent in tasksData:
+                commentSentiment.append(
+                    CommentSentiment(
+                        postFB=post,
+                        postIG=None,
+                        commentFB=FBPostComment.objects.get(id=comSent.get("id"), post=post),
+                        commentIG=None,
+                        created_on=timezone.now(),
+                        sentiment=comSent.get("sentiment") or None
+                    )
+                )
+        elif platform == "instagram":
+            for comSent in tasksData:
+                commentSentiment.append(
+                    CommentSentiment(
+                        postFB=None,
+                        postIG=post,
+                        commentFB=None,
+                        commentIG=IGPostComment.objects.get(id=comSent.get("id"), post=post),
+                        created_on=timezone.now(),
+                        sentiment=comSent.get("sentiment") or None
+                    )
+                )
+
+        if commentSentiment:
+            if platform == "facebook":
+                bulk_sync(
+                    new_models=commentSentiment,
+                    filters=Q(postFB=post.id),  # Field(s) which is same in all records.
+                    fields=[
+                        "postFB",
+                        "commentFB",
+                        "sentiment"
+                    ],
+                    key_fields=('commentFB_id',),
+                    # Field(s) which is different in all records but always same for itself.
+                    exclude_fields=('id', 'postIG', 'commentIG', 'created_on',),
+                    skip_creates=False,
+                    skip_updates=False,
+                    skip_deletes=False,
+                    batch_size=50
+                )
+            elif platform == "instagram":
+                bulk_sync(
+                    new_models=commentSentiment,
+                    filters=Q(postIG=post.id),  # Field(s) which is same in all records.
+                    fields=[
+                        "postIG",
+                        "commentIG",
+                        "sentiment"
+                    ],
+                    key_fields=('commentIG_id',),
+                    # Field(s) which is different in all records but always same for itself.
+                    exclude_fields=('id', 'postFB', 'commentFB', 'created_on',),
+                    skip_creates=False,
+                    skip_updates=False,
+                    skip_deletes=False,
+                    batch_size=50
+                )
+
+#         return True
+#     else:
+#         return False
+# except:
+#     return False

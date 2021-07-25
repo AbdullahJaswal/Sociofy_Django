@@ -2,6 +2,36 @@ from rest_framework import serializers
 from .models import *
 
 
+class FBPageAnalyticSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FBPageAnalytic
+        fields = '__all__'
+
+
+class FBPageDemographyAnalyticSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FBPageDemographyAnalytic
+        fields = '__all__'
+
+
+class FBPageDailyAnalyticsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FBPageDailyAnalytics
+        fields = '__all__'
+
+
+class FBPostAnalyticSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FBPostAnalytic
+        fields = '__all__'
+
+
+class FBPostRatingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FBPostRating
+        fields = '__all__'
+
+
 class IGPageAnalyticSerializer(serializers.ModelSerializer):
     class Meta:
         model = IGPageAnalytic
@@ -32,60 +62,6 @@ class IGPageDailyAnalyticsNOOUTLIERSSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class IGPageDailyImpressionsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = IGPageDailyImpressions
-        fields = '__all__'
-
-
-class IGPageDailyReachSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = IGPageDailyReach
-        fields = '__all__'
-
-
-class IGPageDailyFollowerCountSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = IGPageDailyFollowerCount
-        fields = '__all__'
-
-
-class IGPageDailyEmailContactsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = IGPageDailyEmailContacts
-        fields = '__all__'
-
-
-class IGPageDailyPhoneCallClicksSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = IGPageDailyPhoneCallClicks
-        fields = '__all__'
-
-
-class IGPageDailyTextMessageClicksSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = IGPageDailyTextMessageClicks
-        fields = '__all__'
-
-
-class IGPageDailyDirectionsClicksSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = IGPageDailyDirectionsClicks
-        fields = '__all__'
-
-
-class IGPageDailyWebsiteClicksSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = IGPageDailyWebsiteClicks
-        fields = '__all__'
-
-
-class IGPageDailyProfileViewsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = IGPageDailyProfileViews
-        fields = '__all__'
-
-
 class IGPostAnalyticSerializer(serializers.ModelSerializer):
     class Meta:
         model = IGPostAnalytic
@@ -101,4 +77,10 @@ class IGPostRatingsSerializer(serializers.ModelSerializer):
 class IGBestPostTimeSerializer(serializers.ModelSerializer):
     class Meta:
         model = IGBestPostTime
+        fields = '__all__'
+
+
+class CommentSentimentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommentSentiment
         fields = '__all__'

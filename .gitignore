@@ -10,3 +10,4 @@ testing.py
 __init__.py
 igpagedailyanalytics.csv
 media
+aws_configs.py

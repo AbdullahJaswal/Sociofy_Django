@@ -6,7 +6,8 @@ import base64
 from django.core.cache import cache
 
 
-def createFBPost(fb_obj_id, app_id, app_secret, access_token, message=None, link=None, pictures=None, video=None):
+def createFBPost(fb_obj_id, app_id, app_secret, access_token, message=None, link=None, pictures=None, video=None,
+                 schedule=None):
     FacebookAdsApi.init(
         app_id=app_id,
         app_secret=app_secret,
@@ -61,16 +62,30 @@ def createFBPost(fb_obj_id, app_id, app_secret, access_token, message=None, link
             return True
         except:
             return False
-    elif message or link:
-        params = {
-            'message': message,
-            'link': link
-        }
+    elif message:
+        if schedule is None:
+            params = {
+                'message': message,
+            }
 
-        try:
-            Page(fb_obj_id).create_feed(params=params)
+            try:
+                Page(fb_obj_id).create_feed(params=params)
 
-            cache.clear()
-            return True
-        except:
-            return False
+                cache.clear()
+                return True
+            except:
+                return False
+        else:
+            params = {
+                'message': message,
+                'published': False,
+                'scheduled_publish_time': schedule,
+            }
+
+            try:
+                Page(fb_obj_id).create_feed(params=params)
+
+                cache.clear()
+                return True
+            except:
+                return False

@@ -9,6 +9,7 @@ from ig_management.api.get.Comment_Data import *
 from ig_management.api.get.Reply_Data import *
 from ig_management.api.post.Create_Comment import *
 from ig_management.api.delete.Delete_Comment import *
+from ig_management.api.Sentiment_Analysis import *
 from django.utils import timezone
 from django.db.models import Q
 
@@ -324,6 +325,19 @@ def fetch_ig_post_comments_data(local_page_id, local_post_id, user_id):
 
             comments = []
             if obj:
+                tasks = []
+                for comment in obj:
+                    if comment.get('text') is not None and comment.get('text') != "":
+                        tasks.append(
+                            getSentiment.s(comment.get("id"), comment.get("text"))
+                        )
+
+                task_group = group(*tasks)
+                result_group = task_group.apply_async()
+                tasksData = result_group.join()
+
+                obj = getIGCommentData(post.post_id, fb_app.app_id, fb_app.app_secret, page[0].sm_account.access_token)
+
                 for comment in obj:
                     comment_user_id = None
                     if 'user' in comment:
@@ -341,20 +355,28 @@ def fetch_ig_post_comments_data(local_page_id, local_post_id, user_id):
                     # except:
                     #     replies_count = 0
 
-                    comments.append(IGPostComment(
-                        post=post,
-                        comment_id=comment.get('id') or None,
-                        ig_user_id=comment_user_id,
-                        ig_user_name=comment.get('username') or None,
-                        created_on=comment.get('timestamp') or None,
-                        modified_on=timezone.now(),
-                        is_hidden=comment.get('hidden'),
-                        text=comment.get('text') or None,
-                        like_count=comment.get('like_count') or 0,
-                        replies_count=0,
-                        replies=None,
-                        comment_post_id=media_user_id,
-                    ))
+                    sentiment = None
+                    for comSent in tasksData:
+                        if comSent.get("id") == comment.get("id"):
+                            sentiment = comSent.get("sentiment") or None
+
+                    comments.append(
+                        IGPostComment(
+                            post=post,
+                            comment_id=comment.get('id') or None,
+                            ig_user_id=comment_user_id,
+                            ig_user_name=comment.get('username') or None,
+                            created_on=comment.get('timestamp') or None,
+                            modified_on=timezone.now(),
+                            is_hidden=comment.get('hidden'),
+                            text=comment.get('text') or None,
+                            like_count=comment.get('like_count') or 0,
+                            replies_count=0,
+                            replies=None,
+                            comment_post_id=media_user_id,
+                            sentiment=sentiment or None
+                        )
+                    )
 
             if comments:
                 bulk_sync(
@@ -367,7 +389,8 @@ def fetch_ig_post_comments_data(local_page_id, local_post_id, user_id):
                         'text',
                         'like_count',
                         'replies_count',
-                        'replies'
+                        'replies',
+                        'sentiment'
                     ],
                     key_fields=('comment_id',),
                     # Field(s) which is different in all records but always same for itself.

@@ -105,14 +105,18 @@ class FBPostList(generics.ListCreateAPIView):
         page = FBPage.objects.get(page_id=PAGE, user_id=self.request.user.id)
 
         if page.user_id == self.request.user.id:
-            if (request.data['message'] is None and request.data['link'] is None and request.data['media'] is None) or (
-                    request.data['message'] == '' and request.data['link'] == '' and request.data['media'] == ''):
+            if (request.data['message'] is None and request.data['link'] is None and request.data['media'] is None and
+                request.data['created_time'] is None) or (
+                    request.data['message'] == '' and request.data['link'] == '' and request.data['media'] == '' and
+                    request.data['created_time'] is None):
                 return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
             else:
                 response = create_fb_post(page.id, self.request.user.id,
-                                          request.data['message'] or None,
-                                          request.data['link'] or None,
-                                          request.data['media'] or None
+                                          message=request.data.get('message') or None,
+                                          link=request.data.get('link') or None,
+                                          pictures=request.data.get('media') or None,
+                                          video=None,
+                                          schedule=request.data.get('created_time') or None
                                           )
 
                 if response:
@@ -160,6 +164,32 @@ class FBPostDetail(generics.RetrieveDestroyAPIView):
             elif response == 0:
                 # If the Post was not posted from the application.
                 return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+            else:
+                return Response(status=status.HTTP_502_BAD_GATEWAY)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+
+class FBScheduledPostList(generics.ListCreateAPIView):
+    permission_classes = [permission]
+    throttle_classes = [UserRateThrottle]
+    serializer_class = FBScheduledPostSerializer
+    lookup_url_kwarg = 'pk'
+
+    # pagination_class = CustomPagination
+
+    def get_queryset(self):
+        return FBScheduledPost.objects.filter(page=self.kwargs.get('pk'))
+
+    # @method_decorator(caching)
+    def get(self, request, *args, **kwargs):
+        page = FBPage.objects.get(id=self.kwargs.get('pk'), user=self.request.user.id)
+
+        if page.user_id == self.request.user.id:
+            response = fetch_fb_scheduled_posts_data(kwargs.get('pk'), self.request.user.id)  # Local Page ID
+
+            if response:
+                return self.list(request, *args, **kwargs)
             else:
                 return Response(status=status.HTTP_502_BAD_GATEWAY)
         else:

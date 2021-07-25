@@ -58,10 +58,29 @@ class FBPost(models.Model):
     privacy = models.CharField(max_length=64, default=None, null=True, blank=True)
     status_type = models.CharField(max_length=64, default=None, null=True, blank=True)
 
+    rating = models.DecimalField(max_digits=2, decimal_places=1, default=None, null=True, blank=True)
+
     objects = models.Manager()
 
     class Meta:
         ordering = ('-created_time',)
+
+    def __str__(self):
+        return str(self.id)
+
+
+class FBScheduledPost(models.Model):
+    page = models.ForeignKey(FBPage, on_delete=models.CASCADE, default=None, null=True, blank=True)
+    post_id = models.CharField(max_length=128, default=None, null=True, blank=True)
+    pageName = models.CharField(max_length=128, default=None, null=True, blank=True)
+    scheduled_time = models.DateTimeField(default=None, null=True, blank=True)
+    modified_on = models.DateTimeField(default=timezone.now, null=True, blank=True)
+    message = models.TextField(max_length=64000, default=None, null=True, blank=True)
+
+    objects = models.Manager()
+
+    class Meta:
+        ordering = ('scheduled_time',)
 
     def __str__(self):
         return str(self.id)
@@ -82,6 +101,7 @@ class FBPostComment(models.Model):
     reactions = models.JSONField(default=None, null=True, blank=True)
     replies_count = models.IntegerField(default=None, null=True, blank=True)
     replies = models.JSONField(default=None, null=True, blank=True)
+    sentiment = models.CharField(max_length=32, default=None, null=True, blank=True)
 
     objects = models.Manager()
 

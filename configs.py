@@ -7,3 +7,4 @@ permission = IsAuthenticated
 permissionAllow = AllowAny
 permissionIsAdmin = IsAdminUser
 caching = [cache_page(60 * 5), vary_on_cookie]
+# caching = []
